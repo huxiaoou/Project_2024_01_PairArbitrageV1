@@ -66,12 +66,12 @@ def cal_diff_returns(
 
 
 def cal_diff_returns_groups(
-        instruments_group: list[tuple[str, str]],
+        instruments_pairs: list[tuple[str, str]],
         major_return_save_dir: str,
         run_mode: str, bgn_date: str, stp_date: str,
         diff_returns_dir: str,
 ):
-    for instru_a, instru_b in instruments_group:
+    for instru_a, instru_b in instruments_pairs:
         cal_diff_returns(
             instru_a, instru_b, major_return_save_dir,
             run_mode=run_mode, bgn_date=bgn_date, stp_date=stp_date,

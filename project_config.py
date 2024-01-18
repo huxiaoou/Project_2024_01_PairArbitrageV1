@@ -1,4 +1,4 @@
-instruments_group = [
+instruments_pairs = [
     ("A.DCE", "M.DCE"),
     ("A.DCE", "Y.DCE"),
     ("M.DCE", "Y.DCE"),
@@ -25,5 +25,5 @@ instruments_group = [
     ("C.DCE", "CS.DCE"),
     ("MA.CZC", "V.DCE"),
 ]
-ga, gb = zip(*instruments_group)
+ga, gb = zip(*instruments_pairs)
 ga, gb = list(ga), list(gb)
