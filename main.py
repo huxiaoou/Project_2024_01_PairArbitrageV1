@@ -10,6 +10,7 @@ def parse_project_args():
 
     # diff return
     parser_sub = parsers_sub.add_parser(name="diff", help="Calculate difference return of pair instruments")
+    parser_sub.add_argument("--mode", type=str, help="overwrite or append", choices=("o", "a"))
     parser_sub.add_argument("--bgn", type=str, help="begin date, format = [YYYYMMDD]")
     parser_sub.add_argument("--stp", type=str, help="stop  date, format = [YYYYMMDD]")
 
@@ -31,8 +32,7 @@ if __name__ == "__main__":
         cal_diff_returns_groups(
             instruments_group=instruments_group,
             major_return_save_dir=major_return_save_dir,
-            bgn_date=args.bgn,
-            stp_date=args.stp,
+            run_mode=args.mode, bgn_date=args.bgn, stp_date=args.stp,
             diff_returns_dir=diff_returns_dir
         )
     elif args.switch == "exposure":

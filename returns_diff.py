@@ -1,12 +1,34 @@
-import os
 import pandas as pd
-from husfort.qsqlite import CLibMajorReturn
+from husfort.qsqlite import CLibMajorReturn, CQuickSqliteLib, CLib1Tab1, CTable
+
+
+class CLibDiffReturn(CQuickSqliteLib):
+    def __init__(self, instru_a: str, instru_b: str, lib_save_dir: str):
+        self.instru_a, self.instru_b = instru_a, instru_b
+        lib_name = f"diff_return.{instru_a}_{instru_b}.db"
+        super().__init__(lib_name, lib_save_dir)
+
+    def get_lib_struct(self) -> CLib1Tab1:
+        return CLib1Tab1(
+            lib_name=self.lib_name,
+            table=CTable(
+                {
+                    "table_name": "diff_return",
+                    "primary_keys": {"trade_date": "TEXT"},
+                    "value_columns": {
+                        "instru_a": "REAL",
+                        "instru_b": "REAL",
+                        "diff_return": "REAL",
+                    },
+                }
+            )
+        )
 
 
 def cal_diff_returns(
         instru_a: str, instru_b: str,
         major_return_save_dir: str,
-        bgn_date: str, stp_date: str,
+        run_mode: str, bgn_date: str, stp_date: str,
         diff_returns_dir: str,
 ):
     lib_reader = CLibMajorReturn(instrument=instru_a, lib_save_dir=major_return_save_dir).get_lib_reader()
@@ -35,18 +57,24 @@ def cal_diff_returns(
         print(f"... [ERR] length of {instru_a} != length of diff returns")
         raise ValueError
     diff_return_df["diff_return"] = (diff_return_df[instru_a] - diff_return_df[instru_b]) * 0.5
-    diff_return_file = f"diff_return.{instru_a}_{instru_b}.csv.gz"
-    diff_return_path = os.path.join(diff_returns_dir, diff_return_file)
-    diff_return_df.to_csv(diff_return_path, float_format="%.8f")
+
+    lib_writer = CLibDiffReturn(instru_a, instru_b, diff_returns_dir).get_lib_writer(run_mode=run_mode)
+    lib_writer.update(update_df=diff_return_df, using_index=True)
+    lib_writer.commit()
+    lib_writer.close()
     return 0
 
 
 def cal_diff_returns_groups(
         instruments_group: list[tuple[str, str]],
         major_return_save_dir: str,
-        bgn_date: str, stp_date: str,
+        run_mode: str, bgn_date: str, stp_date: str,
         diff_returns_dir: str,
 ):
     for instru_a, instru_b in instruments_group:
-        cal_diff_returns(instru_a, instru_b, major_return_save_dir, bgn_date, stp_date, diff_returns_dir)
+        cal_diff_returns(
+            instru_a, instru_b, major_return_save_dir,
+            run_mode=run_mode, bgn_date=bgn_date, stp_date=stp_date,
+            diff_returns_dir=diff_returns_dir
+        )
     return 0
