@@ -1,4 +1,6 @@
+import datetime as dt
 import pandas as pd
+from husfort.qutility import SFG
 from husfort.qsqlite import CQuickSqliteLib, CLib1Tab1, CTable
 from husfort.qcalendar import CCalendar
 from returns_diff import CLibDiffReturn
@@ -45,7 +47,9 @@ class CFactorExposure(object):
 
     def main(self, run_mode: str, bgn_date: str, stp_date: str, calendar: CCalendar):
         factor_exposure_df = self.cal(bgn_date, stp_date, calendar)
+        factor_exposure_df = self.truncate_before_bgn(factor_exposure_df, bgn_date)
         self.save(factor_exposure_df, run_mode)
+        print(f"{dt.datetime.now()} [INF] Factor {SFG(self.factor)} is calculated")
         return 0
 
 
@@ -74,4 +78,4 @@ class CFactorExposureLagRet(CFactorExposure):
             dfs_list.append(pair_df[["pair", self.factor]])
         df = pd.concat(dfs_list, axis=0, ignore_index=False)
         df.sort_values(by=["trade_date", "pair"], inplace=True)
-        return self.truncate_before_bgn(df, bgn_date)
+        return df

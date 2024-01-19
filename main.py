@@ -46,13 +46,16 @@ if __name__ == "__main__":
         calendar = CCalendar(calendar_path)
         if args.factor == "lag":
             from exposures import CFactorExposureLagRet
+            from project_config import config_factor
+            factor_args = config_factor["lag"]["args"]
 
-            factor = CFactorExposureLagRet(
-                lag=1, diff_returns_dir=diff_returns_dir,
-                factors_exposure_dir=factors_exposure_dir,
-                instruments_pairs=instruments_pairs,
-            )
-            factor.main(run_mode=args.mode, bgn_date=args.bgn, stp_date=args.stp, calendar=calendar)
+            for lag in factor_args:
+                factor = CFactorExposureLagRet(
+                    lag=lag, diff_returns_dir=diff_returns_dir,
+                    factors_exposure_dir=factors_exposure_dir,
+                    instruments_pairs=instruments_pairs,
+                )
+                factor.main(run_mode=args.mode, bgn_date=args.bgn, stp_date=args.stp, calendar=calendar)
         elif args.factor == "ewm":
             pass
         elif args.factor == "basis":
