@@ -3,6 +3,7 @@ import os
 
 major_return_save_dir = r"E:\Deploy\Data\Futures\by_instrument"
 calendar_path = r"E:\Deploy\Data\Calendar\cne_calendar.csv"
+instru_factor_exposure_dir = r"E:\Deploy\Data\ForProjects\cta3\factors_exposure\raw"
 
 save_root_dir = r"E:\ProjectsData"
 project_save_dir = get_twin_dir(save_root_dir, src=".")

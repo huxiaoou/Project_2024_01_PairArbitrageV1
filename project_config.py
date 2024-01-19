@@ -32,5 +32,38 @@ ga, gb = list(ga), list(gb)
 config_factor = {
     "lag": {
         "args": (1, 2, 3, 4, 5)
-    }
+    },
+    "basisa": {
+        "args": (60, 120,)
+    },
+    "ctp": {
+        "args": (120,)
+    },
+    "cvp": {
+        "args": (120,)
+    },
+    "csp": {
+        "args": (120,)
+    },
+    "rsbr": {
+        "args": (10,)
+    },
+    "rslr": {
+        "args": (20,)
+    },
+    "skew": {
+        "args": (10,)
+    },
+    "mtm": {
+        "args": (1,)
+    },
+    "mtms": {
+        "args": (240,)
+    },
+    "tsa": {
+        "args": (120, 180)
+    },
+    "tsld": {
+        "args": (240,)
+    },
 }

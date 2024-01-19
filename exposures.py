@@ -1,7 +1,7 @@
 import datetime as dt
 import pandas as pd
 from husfort.qutility import SFG
-from husfort.qsqlite import CQuickSqliteLib, CLib1Tab1, CTable
+from husfort.qsqlite import CQuickSqliteLib, CLib1Tab1, CTable, CLibFactor
 from husfort.qcalendar import CCalendar
 from returns_diff import CLibDiffReturn
 
@@ -32,6 +32,13 @@ class CFactorExposure(object):
         self.instruments_pairs = instruments_pairs
 
     def cal(self, bgn_date: str, stp_date: str, calendar: CCalendar) -> pd.DataFrame:
+        """
+
+        :param bgn_date:
+        :param stp_date:
+        :param calendar:
+        :return: a pd.DataFrame, with index = list[str["YYYYMMDD"]], columns = ["pair", factor]
+        """
         pass
 
     @staticmethod
@@ -72,10 +79,44 @@ class CFactorExposureLagRet(CFactorExposure):
                     ("trade_date", "<", stp_date),
                 ], value_columns=["trade_date", "diff_return"]
             ).set_index("trade_date")
-            pair_df[self.factor] = pair_df["diff_return"].shift(1)
-            pair_df.truncate(before=bgn_date)
+            pair_df[self.factor] = pair_df["diff_return"].shift(self.lag)
             pair_df["pair"] = pair
             dfs_list.append(pair_df[["pair", self.factor]])
         df = pd.concat(dfs_list, axis=0, ignore_index=False)
         df.sort_values(by=["trade_date", "pair"], inplace=True)
         return df
+
+
+class __CFactorExposureFromInstruExposure(CFactorExposure):
+    def __init__(self, factor: str, instru_factor_exposure_dir: str, **kwargs):
+        self.instru_factor_exposure_dir = instru_factor_exposure_dir
+        super().__init__(factor=factor, **kwargs)
+
+    def cal(self, bgn_date: str, stp_date: str, calendar: CCalendar) -> pd.DataFrame:
+        lib_instru_factor = CLibFactor(self.factor, self.instru_factor_exposure_dir).get_lib_reader()
+        dfs_list = []
+        for (instru_a, instru_b) in self.instruments_pairs:
+            pair = f"{instru_a}_{instru_b}"
+            instru_factor_exposure = {}
+            for instru in [instru_a, instru_b]:
+                instru_df = lib_instru_factor.read_by_conditions(
+                    conditions=[
+                        ("trade_date", ">=", bgn_date),
+                        ("trade_date", "<", stp_date),
+                        ("instrument", "=", instru)
+                    ], value_columns=["trade_date", "value"]
+                ).set_index("trade_date")
+                instru_factor_exposure[instru] = instru_df["value"]
+            pair_df = pd.DataFrame(instru_factor_exposure)
+            pair_df[self.factor] = (pair_df[instru_a] - pair_df[instru_b]).fillna(0)
+            pair_df["pair"] = pair
+            dfs_list.append(pair_df[["pair", self.factor]])
+        df = pd.concat(dfs_list, axis=0, ignore_index=False)
+        df.sort_values(by=["trade_date", "pair"], inplace=True)
+        return df
+
+
+class CFactorExposureBasisa(__CFactorExposureFromInstruExposure):
+    def __init__(self, win: int, instru_factor_exposure_dir: str, **kwargs):
+        factor = f"BASISA{win:03d}"
+        super().__init__(factor, instru_factor_exposure_dir, **kwargs)
