@@ -87,3 +87,28 @@ config_factor = {
         "args": (240,)
     },
 }
+
+factors_lag = [f"LAG{_:02d}" for _ in config_factor["lag"]["args"]]
+factors_ewm = [f"F{int(fast * 100):02d}S{int(slow * 100):02d}" for (fast, slow) in config_factor["ewm"]["args"]]
+factors_vty = [f"VTY{_:02d}K{k:d}" for (_, k) in config_factor["volatility"]["args"]]
+factors_tnr = [f"TNR{_:02d}K{k:d}" for (_, k) in config_factor["tnr"]["args"]]
+
+factors_basisa = [f"BASISA{_:03d}" for _ in config_factor["basisa"]["args"]]
+factors_ctp = [f"CTP{_:03d}" for _ in config_factor["ctp"]["args"]]
+factors_cvp = [f"CVP{_:03d}" for _ in config_factor["csp"]["args"]]
+factors_csp = [f"CSP{_:03d}" for _ in config_factor["cvp"]["args"]]
+factors_rsbr = [f"RSBR{_:03d}" for _ in config_factor["rsbr"]["args"]]
+factors_rslr = [f"RSLR{_:03d}" for _ in config_factor["rslr"]["args"]]
+factors_skew = [f"SKEW{_:03d}" for _ in config_factor["skew"]["args"]]
+factors_mtm = [f"MTM" for _ in config_factor["mtm"]["args"]]
+factors_mtms = [f"MTMS{_:03d}" for _ in config_factor["mtms"]["args"]]
+factors_tsa = [f"TSA{_:03d}" for _ in config_factor["tsa"]["args"]]
+factors_tsld = [f"TSLD{_:03d}" for _ in config_factor["tsld"]["args"]]
+
+factors = factors_lag + factors_ewm + factors_vty + factors_tnr + \
+          factors_basisa + \
+          factors_ctp + factors_cvp + factors_csp + \
+          factors_rsbr + factors_rslr + \
+          factors_skew + \
+          factors_mtm + factors_mtms + \
+          factors_tsa + factors_tsld

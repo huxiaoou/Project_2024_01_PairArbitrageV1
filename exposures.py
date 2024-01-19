@@ -99,7 +99,7 @@ class _CFactorExposureEndogenous(CFactorExposure):
 class CFactorExposureLagRet(_CFactorExposureEndogenous):
     def __init__(self, lag: int, diff_returns_dir: str, **kwargs):
         self.lag = lag
-        factor = f"L{lag:02d}"
+        factor = f"LAG{lag:02d}"
         super().__init__(factor, diff_returns_dir, **kwargs)
 
     def _get_base_date(self, bgn_date: str, calendar: CCalendar) -> str:
@@ -128,7 +128,7 @@ class CFactorExposureEWM(_CFactorExposureEndogenous):
 class CFactorExposureVolatility(_CFactorExposureEndogenous):
     def __init__(self, win: int, k: int, diff_returns_dir: str, **kwargs):
         self.win, self.k = win, k
-        factor = f"VLTY{win:02d}K{k:d}"
+        factor = f"VTY{win:02d}K{k:d}"
         super().__init__(factor, diff_returns_dir, **kwargs)
 
     def _get_base_date(self, bgn_date: str, calendar: CCalendar) -> str:
