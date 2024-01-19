@@ -190,3 +190,66 @@ class CFactorExposureBasisa(_CFactorExposureFromInstruExposure):
     def __init__(self, win: int, instru_factor_exposure_dir: str, **kwargs):
         factor = f"BASISA{win:03d}"
         super().__init__(factor, instru_factor_exposure_dir, **kwargs)
+
+
+class CFactorExposureCTP(_CFactorExposureFromInstruExposure):
+    def __init__(self, win: int, instru_factor_exposure_dir: str, **kwargs):
+        factor = f"CTP{win:03d}"
+        super().__init__(factor, instru_factor_exposure_dir, **kwargs)
+
+
+class CFactorExposureCVP(_CFactorExposureFromInstruExposure):
+    def __init__(self, win: int, instru_factor_exposure_dir: str, **kwargs):
+        factor = f"CVP{win:03d}"
+        super().__init__(factor, instru_factor_exposure_dir, **kwargs)
+
+
+class CFactorExposureCSP(_CFactorExposureFromInstruExposure):
+    def __init__(self, win: int, instru_factor_exposure_dir: str, **kwargs):
+        factor = f"CSP{win:03d}"
+        super().__init__(factor, instru_factor_exposure_dir, **kwargs)
+
+
+class CFactorExposureRSBR(_CFactorExposureFromInstruExposure):
+    def __init__(self, win: int, instru_factor_exposure_dir: str, **kwargs):
+        factor = f"RSBR{win:03d}"
+        super().__init__(factor, instru_factor_exposure_dir, **kwargs)
+
+
+class CFactorExposureRSLR(_CFactorExposureFromInstruExposure):
+    def __init__(self, win: int, instru_factor_exposure_dir: str, **kwargs):
+        factor = f"RSLR{win:03d}"
+        super().__init__(factor, instru_factor_exposure_dir, **kwargs)
+
+
+class CFactorExposureSKEW(_CFactorExposureFromInstruExposure):
+    def __init__(self, win: int, instru_factor_exposure_dir: str, **kwargs):
+        factor = f"SKEW{win:03d}"
+        super().__init__(factor, instru_factor_exposure_dir, **kwargs)
+
+
+class CFactorExposureMTM(_CFactorExposureFromInstruExposure):
+    def __init__(self, win: int, instru_factor_exposure_dir: str, **kwargs):
+        if win != 1:
+            print(f"win = {win} for factor MTM is wrong")
+            raise ValueError
+        factor = f"MTM"
+        super().__init__(factor, instru_factor_exposure_dir, **kwargs)
+
+
+class CFactorExposureMTMS(_CFactorExposureFromInstruExposure):
+    def __init__(self, win: int, instru_factor_exposure_dir: str, **kwargs):
+        factor = f"MTMS{win:03d}"
+        super().__init__(factor, instru_factor_exposure_dir, **kwargs)
+
+
+class CFactorExposureTSA(_CFactorExposureFromInstruExposure):
+    def __init__(self, win: int, instru_factor_exposure_dir: str, **kwargs):
+        factor = f"TSA{win:03d}"
+        super().__init__(factor, instru_factor_exposure_dir, **kwargs)
+
+
+class CFactorExposureTSLD(_CFactorExposureFromInstruExposure):
+    def __init__(self, win: int, instru_factor_exposure_dir: str, **kwargs):
+        factor = f"TSLD{win:03d}"
+        super().__init__(factor, instru_factor_exposure_dir, **kwargs)
