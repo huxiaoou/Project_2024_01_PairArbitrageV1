@@ -17,7 +17,8 @@ def parse_project_args():
     # factor exposure
     parser_sub = parsers_sub.add_parser(name="exposure", help="Calculate factor exposure")
     parser_sub.add_argument("--factor", type=str, help="which factor to calculate", choices=(
-        "lag", "ewm", "basisa", "ctp", "cvp", "csp",
+        "lag", "ewm", "volatility", "tnr",
+        "basisa", "ctp", "cvp", "csp",
         "rsbr", "rslr", "skew", "mtm", "mtms", "tsa", "tsld"
     ))
     parser_sub.add_argument("--mode", type=str, help="overwrite or append", choices=("o", "a"))
@@ -42,13 +43,13 @@ if __name__ == "__main__":
         )
     elif args.switch == "exposure":
         from husfort.qcalendar import CCalendar
-        from project_setup import factors_exposure_dir, diff_returns_dir, calendar_path
-        from project_config import instruments_pairs
+        from project_setup import (factors_exposure_dir, diff_returns_dir,
+                                   instru_factor_exposure_dir, calendar_path)
+        from project_config import instruments_pairs, config_factor
 
         calendar = CCalendar(calendar_path)
         if args.factor == "lag":
             from exposures import CFactorExposureLagRet
-            from project_config import config_factor
 
             factor_args = config_factor["lag"]["args"]
             for lag in factor_args:
@@ -59,10 +60,41 @@ if __name__ == "__main__":
                 )
                 factor.main(run_mode=args.mode, bgn_date=args.bgn, stp_date=args.stp, calendar=calendar)
         elif args.factor == "ewm":
-            pass
+            from exposures import CFactorExposureEWM
+
+            factor_args = config_factor["ewm"]["args"]
+            fix_base_date = config_factor["ewm"]["fix_base_date"]
+            for (fast, slow) in factor_args:
+                factor = CFactorExposureEWM(
+                    fast=fast, slow=slow, diff_returns_dir=diff_returns_dir,
+                    fix_base_date=fix_base_date,
+                    factors_exposure_dir=factors_exposure_dir,
+                    instruments_pairs=instruments_pairs,
+                )
+                factor.main(run_mode=args.mode, bgn_date=args.bgn, stp_date=args.stp, calendar=calendar)
+        elif args.factor == "volatility":
+            from exposures import CFactorExposureVolatility
+
+            factor_args = config_factor["volatility"]["args"]
+            for (win, k) in factor_args:
+                factor = CFactorExposureVolatility(
+                    win=win, k=k, diff_returns_dir=diff_returns_dir,
+                    factors_exposure_dir=factors_exposure_dir,
+                    instruments_pairs=instruments_pairs,
+                )
+                factor.main(run_mode=args.mode, bgn_date=args.bgn, stp_date=args.stp, calendar=calendar)
+        elif args.factor == "tnr":
+            from exposures import CFactorExposureTNR
+
+            factor_args = config_factor["tnr"]["args"]
+            for (win, k) in factor_args:
+                factor = CFactorExposureTNR(
+                    win=win, k=k, diff_returns_dir=diff_returns_dir,
+                    factors_exposure_dir=factors_exposure_dir,
+                    instruments_pairs=instruments_pairs,
+                )
+                factor.main(run_mode=args.mode, bgn_date=args.bgn, stp_date=args.stp, calendar=calendar)
         elif args.factor == "basisa":
-            from project_setup import instru_factor_exposure_dir
-            from project_config import config_factor
             from exposures import CFactorExposureBasisa
 
             factor_args = config_factor["basisa"]["args"]
