@@ -2,6 +2,7 @@ $bgn_date_diff = "20160104"
 $bgn_date_fact = $bgn_date_diff
 $bgn_date_regp = "20160401"
 $bgn_date_ictt = $bgn_date_regp
+$bgn_date_simu = $bgn_date_regp
 $stp_date = "20240122"
 
 # diff return
@@ -29,3 +30,6 @@ python main.py regroups --mode o --bgn $bgn_date_regp --stp $stp_date
 
 # ic-tests
 python main.py ic-tests          --bgn $bgn_date_ictt --stp $stp_date
+
+# quick simulations
+python main.py quick-simu --mode o --bgn $bgn_date_simu --stp $stp_date

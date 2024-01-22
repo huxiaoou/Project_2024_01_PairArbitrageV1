@@ -116,6 +116,7 @@ factors = factors_lag + factors_ewm + factors_vty + factors_tnr + \
 pairs_qty = len(instruments_pairs)
 factors_qty = len(factors)
 diff_ret_delays = [1, 2]
+cost_rate = 0e-4
 
 if __name__ == "__main__":
     print(f"quantity of pairs   = {pairs_qty}")

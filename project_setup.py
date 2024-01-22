@@ -11,6 +11,7 @@ diff_returns_dir = os.path.join(project_save_dir, "diff_returns")
 factors_exposure_dir = os.path.join(project_save_dir, "factors_exposure")
 regroups_dir = os.path.join(project_save_dir, "regroups")
 ic_tests_dir = os.path.join(project_save_dir, "ic_tests")
+simulations_dir = os.path.join(project_save_dir, "simulations")
 
 if __name__ == "__main__":
     from husfort.qutility import check_and_mkdir
@@ -20,3 +21,4 @@ if __name__ == "__main__":
     check_and_mkdir(factors_exposure_dir)
     check_and_mkdir(regroups_dir)
     check_and_mkdir(ic_tests_dir)
+    check_and_mkdir(simulations_dir)

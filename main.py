@@ -36,6 +36,12 @@ def parse_project_args():
     parser_sub.add_argument("--bgn", type=str, help="begin date, format = [YYYYMMDD]", required=True)
     parser_sub.add_argument("--stp", type=str, help="stop  date, format = [YYYYMMDD]")
 
+    # quick simulation
+    parser_sub = parsers_sub.add_parser(name="quick-simu", help="Quick simulation for given factor and pairs")
+    parser_sub.add_argument("--mode", type=str, help="overwrite or append", choices=("o", "a"), required=True)
+    parser_sub.add_argument("--bgn", type=str, help="begin date, format = [YYYYMMDD]", required=True)
+    parser_sub.add_argument("--stp", type=str, help="stop  date, format = [YYYYMMDD]")
+
     return parser_main.parse_args()
 
 
@@ -233,14 +239,25 @@ if __name__ == "__main__":
             calendar=calendar,
         )
     elif args.switch == "ic-tests":
-        from ic_tests import cal_ic_tests_pairs
         from project_setup import regroups_dir, ic_tests_dir
         from project_config import instruments_pairs, factors, diff_ret_delays
+        from ic_tests import cal_ic_tests_pairs
 
         cal_ic_tests_pairs(
             instruments_pairs=instruments_pairs, diff_ret_delays=diff_ret_delays,
             bgn_date=args.bgn, stp_date=args.stp, factors=factors,
             regroups_dir=regroups_dir, ic_tests_dir=ic_tests_dir
+        )
+    elif args.switch == "quick-simu":
+        from project_setup import regroups_dir, simulations_dir
+        from project_config import cost_rate, instruments_pairs, factors, diff_ret_delays
+        from simulations import cal_simulations_pairs
+
+        cal_simulations_pairs(
+            proc_qty=5,
+            instruments_pairs=instruments_pairs, diff_ret_delays=diff_ret_delays,
+            run_mode=args.mode, bgn_date=args.bgn, stp_date=args.stp, factors=factors,
+            cost_rate=cost_rate, regroups_dir=regroups_dir, simulations_dir=simulations_dir
         )
     else:
         raise ValueError
