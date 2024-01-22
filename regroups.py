@@ -8,7 +8,7 @@ from returns_diff import CLibDiffReturn
 from exposures import CLibFactorExposure
 
 
-class CLibRegroup(CQuickSqliteLib):
+class CLibRegroups(CQuickSqliteLib):
     def __init__(self, pair: tuple[str, str], delay: int, lib_save_dir: str):
         self.pair = pair
         self.instru_a, self.instru_b = self.pair
@@ -73,10 +73,10 @@ def cal_regroups(
     diff_ret_df = diff_ret_df[["trade_date", "factor", "value"]]
 
     update_df = pd.concat([exposure_df, diff_ret_df], axis=0, ignore_index=True)
-    lib_regroup_writer = CLibRegroup(pair, delay, regroups_dir).get_lib_writer(run_mode)
-    lib_regroup_writer.update(update_df, using_index=False)
-    lib_regroup_writer.commit()
-    lib_regroup_writer.close()
+    lib_regroups_writer = CLibRegroups(pair, delay, regroups_dir).get_lib_writer(run_mode)
+    lib_regroups_writer.update(update_df, using_index=False)
+    lib_regroups_writer.commit()
+    lib_regroups_writer.close()
     return 0
 
 

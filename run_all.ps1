@@ -1,5 +1,7 @@
 $bgn_date_diff = "20160104"
 $bgn_date_fact = $bgn_date_diff
+$bgn_date_regp = "20160401"
+$bgn_date_ictt = $bgn_date_regp
 $stp_date = "20240122"
 
 # diff return
@@ -21,3 +23,9 @@ python main.py exposure --mode o --bgn $bgn_date_fact --stp $stp_date --factor m
 python main.py exposure --mode o --bgn $bgn_date_fact --stp $stp_date --factor mtms
 python main.py exposure --mode o --bgn $bgn_date_fact --stp $stp_date --factor tsa
 python main.py exposure --mode o --bgn $bgn_date_fact --stp $stp_date --factor tsld
+
+# regroup
+python main.py regroups --mode o --bgn $bgn_date_regp --stp $stp_date
+
+# ic-tests
+python main.py ic-tests          --bgn $bgn_date_ictt --stp $stp_date
