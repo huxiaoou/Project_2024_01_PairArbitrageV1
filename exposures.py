@@ -69,8 +69,8 @@ class _CFactorExposureEndogenous(CFactorExposure):
     def _get_base_date(self, bgn_date: str, calendar: CCalendar) -> str:
         pass
 
-    def _get_diff_return(self, instru_a: str, instru_b: str, base_date: str, stp_date: str) -> pd.DataFrame:
-        lib_diff_return_reader = CLibDiffReturn(instru_a, instru_b, self.diff_returns_dir).get_lib_reader()
+    def _get_diff_return(self, pair: tuple[str, str], base_date: str, stp_date: str) -> pd.DataFrame:
+        lib_diff_return_reader = CLibDiffReturn(pair, self.diff_returns_dir).get_lib_reader()
         pair_df = lib_diff_return_reader.read_by_conditions(
             conditions=[
                 ("trade_date", ">=", base_date),
@@ -87,7 +87,7 @@ class _CFactorExposureEndogenous(CFactorExposure):
         dfs_list = []
         for (instru_a, instru_b) in self.instruments_pairs:
             pair = f"{instru_a}_{instru_b}"
-            pair_df = self._get_diff_return(instru_a, instru_b, base_date, stp_date)
+            pair_df = self._get_diff_return((instru_a, instru_b), base_date, stp_date)
             pair_df[self.factor] = self._cal_factor(pair_df["diff_return"])
             pair_df["pair"] = pair
             dfs_list.append(pair_df[["pair", self.factor]])

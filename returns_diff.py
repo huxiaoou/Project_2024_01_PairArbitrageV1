@@ -3,9 +3,9 @@ from husfort.qsqlite import CLibMajorReturn, CQuickSqliteLib, CLib1Tab1, CTable
 
 
 class CLibDiffReturn(CQuickSqliteLib):
-    def __init__(self, instru_a: str, instru_b: str, lib_save_dir: str):
-        self.instru_a, self.instru_b = instru_a, instru_b
-        lib_name = f"diff_return.{instru_a}_{instru_b}.db"
+    def __init__(self, pair: tuple[str, str], lib_save_dir: str):
+        self.instru_a, self.instru_b = pair
+        lib_name = f"diff_return.{self.instru_a}_{self.instru_b}.db"
         super().__init__(lib_name, lib_save_dir)
 
     def get_lib_struct(self) -> CLib1Tab1:
@@ -59,7 +59,7 @@ def cal_diff_returns(
         raise ValueError
     diff_return_df["diff_return"] = (diff_return_df[instru_a] - diff_return_df[instru_b]) * 0.5
 
-    lib_writer = CLibDiffReturn(instru_a, instru_b, diff_returns_dir).get_lib_writer(run_mode=run_mode)
+    lib_writer = CLibDiffReturn(pair, diff_returns_dir).get_lib_writer(run_mode=run_mode)
     lib_writer.update(update_df=diff_return_df, using_index=True)
     lib_writer.commit()
     lib_writer.close()

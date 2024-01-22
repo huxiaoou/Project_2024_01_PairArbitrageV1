@@ -64,7 +64,7 @@ def cal_regroups(
     exposure_df = merged_df[["test_ret_dates", "factor", "value"]].rename(
         mapper={"test_ret_dates": "trade_date"}, axis=1)
 
-    lib_reader = CLibDiffReturn(instru_a, instru_b, diff_returns_dir).get_lib_reader()
+    lib_reader = CLibDiffReturn(pair, diff_returns_dir).get_lib_reader()
     diff_ret_df = lib_reader.read_by_conditions(conditions=[
         ("trade_date", ">=", diff_ret_bgn_date),
         ("trade_date", "<=", diff_ret_end_date),
