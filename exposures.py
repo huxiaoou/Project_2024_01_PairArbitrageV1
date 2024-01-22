@@ -128,7 +128,7 @@ class CFactorExposureEWM(_CFactorExposureEndogenous):
 class CFactorExposureVolatility(_CFactorExposureEndogenous):
     def __init__(self, win: int, k: int, diff_returns_dir: str, **kwargs):
         self.win, self.k = win, k
-        factor = f"VTY{win:02d}K{k:d}"
+        factor = f"VTY{win:02d}K{k:02d}"
         super().__init__(factor, diff_returns_dir, **kwargs)
 
     def _get_base_date(self, bgn_date: str, calendar: CCalendar) -> str:
@@ -137,13 +137,13 @@ class CFactorExposureVolatility(_CFactorExposureEndogenous):
     def _cal_factor(self, diff_ret_srs: pd.Series) -> pd.Series:
         volatility: pd.Series = diff_ret_srs.rolling(window=self.win).std() * np.sqrt(250)
         volatility_ma = volatility.rolling(window=self.k).mean()
-        return volatility - volatility_ma
+        return volatility / volatility_ma - 1
 
 
 class CFactorExposureTNR(_CFactorExposureEndogenous):
     def __init__(self, win: int, k: int, diff_returns_dir: str, **kwargs):
         self.win, self.k = win, k
-        factor = f"TNR{win:02d}K{k:d}"
+        factor = f"TNR{win:02d}K{k:02d}"
         super().__init__(factor, diff_returns_dir, **kwargs)
 
     def _get_base_date(self, bgn_date: str, calendar: CCalendar) -> str:
@@ -154,7 +154,7 @@ class CFactorExposureTNR(_CFactorExposureEndogenous):
         rng_abs_sum = diff_ret_srs.rolling(window=self.win).sum().abs()
         tnr: pd.Series = rng_abs_sum / rng_sum_abs
         tnr_ma = tnr.rolling(window=self.k).mean()
-        return tnr - tnr_ma
+        return tnr / tnr_ma - 1
 
 
 class _CFactorExposureFromInstruExposure(CFactorExposure):

@@ -1,6 +1,6 @@
 $bgn_date_diff = "20160104"
 $bgn_date_fact = $bgn_date_diff
-$stp_date = "20240119"
+$stp_date = "20240122"
 
 # diff return
 python main.py diff     --mode o --bgn $bgn_date_diff --stp $stp_date

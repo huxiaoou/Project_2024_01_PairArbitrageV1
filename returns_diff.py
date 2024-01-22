@@ -26,11 +26,12 @@ class CLibDiffReturn(CQuickSqliteLib):
 
 
 def cal_diff_returns(
-        instru_a: str, instru_b: str,
+        pair: tuple[str, str],
         major_return_save_dir: str,
         run_mode: str, bgn_date: str, stp_date: str,
         diff_returns_dir: str,
 ):
+    instru_a, instru_b = pair
     lib_reader = CLibMajorReturn(instrument=instru_a, lib_save_dir=major_return_save_dir).get_lib_reader()
     return_df_a = lib_reader.read_by_conditions(
         conditions=[
@@ -65,16 +66,7 @@ def cal_diff_returns(
     return 0
 
 
-def cal_diff_returns_groups(
-        instruments_pairs: list[tuple[str, str]],
-        major_return_save_dir: str,
-        run_mode: str, bgn_date: str, stp_date: str,
-        diff_returns_dir: str,
-):
-    for instru_a, instru_b in instruments_pairs:
-        cal_diff_returns(
-            instru_a, instru_b, major_return_save_dir,
-            run_mode=run_mode, bgn_date=bgn_date, stp_date=stp_date,
-            diff_returns_dir=diff_returns_dir
-        )
+def cal_diff_returns_pairs(instruments_pairs: list[tuple[str, str]], **kwargs):
+    for pair in instruments_pairs:
+        cal_diff_returns(pair=pair, **kwargs)
     return 0

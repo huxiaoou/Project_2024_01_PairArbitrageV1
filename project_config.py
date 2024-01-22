@@ -90,8 +90,8 @@ config_factor = {
 
 factors_lag = [f"LAG{_:02d}" for _ in config_factor["lag"]["args"]]
 factors_ewm = [f"F{int(fast * 100):02d}S{int(slow * 100):02d}" for (fast, slow) in config_factor["ewm"]["args"]]
-factors_vty = [f"VTY{_:02d}K{k:d}" for (_, k) in config_factor["volatility"]["args"]]
-factors_tnr = [f"TNR{_:02d}K{k:d}" for (_, k) in config_factor["tnr"]["args"]]
+factors_vty = [f"VTY{_:02d}K{k:02d}" for (_, k) in config_factor["volatility"]["args"]]
+factors_tnr = [f"TNR{_:02d}K{k:02d}" for (_, k) in config_factor["tnr"]["args"]]
 
 factors_basisa = [f"BASISA{_:03d}" for _ in config_factor["basisa"]["args"]]
 factors_ctp = [f"CTP{_:03d}" for _ in config_factor["ctp"]["args"]]
@@ -112,3 +112,11 @@ factors = factors_lag + factors_ewm + factors_vty + factors_tnr + \
           factors_skew + \
           factors_mtm + factors_mtms + \
           factors_tsa + factors_tsld
+
+pairs_qty = len(instruments_pairs)
+factors_qty = len(factors)
+diff_ret_delays = [1, 2]
+
+if __name__ == "__main__":
+    print(f"quantity of pairs   = {pairs_qty}")
+    print(f"quantity of factors = {factors_qty}")
