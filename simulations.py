@@ -89,9 +89,9 @@ def cal_simulations(pair: tuple[str, str], delay: int,
     return 0
 
 
-def cal_simulations_pairs(proc_qty: int, instruments_pairs: list[tuple[str, str]], diff_ret_delays: list[int],
+def cal_simulations_pairs(instruments_pairs: list[tuple[str, str]], diff_ret_delays: list[int], proc_qty: int = None,
                           **kwargs):
-    pool = mp.Pool(processes=proc_qty)
+    pool = mp.Pool(processes=proc_qty) if proc_qty else mp.Pool()
     for (pair, delay) in product(instruments_pairs, diff_ret_delays):
         pool.apply_async(cal_simulations, args=(pair, delay), kwds=kwargs)
     pool.close()

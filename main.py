@@ -41,6 +41,7 @@ def parse_project_args():
     parser_sub.add_argument("--mode", type=str, help="overwrite or append", choices=("o", "a"), required=True)
     parser_sub.add_argument("--bgn", type=str, help="begin date, format = [YYYYMMDD]", required=True)
     parser_sub.add_argument("--stp", type=str, help="stop  date, format = [YYYYMMDD]")
+    parser_sub.add_argument("--process", type=int, default=None, help="number of process")
 
     return parser_main.parse_args()
 
@@ -254,7 +255,7 @@ if __name__ == "__main__":
         from simulations import cal_simulations_pairs
 
         cal_simulations_pairs(
-            proc_qty=5,
+            proc_qty=args.process,
             instruments_pairs=instruments_pairs, diff_ret_delays=diff_ret_delays,
             run_mode=args.mode, bgn_date=args.bgn, stp_date=args.stp, factors=factors,
             cost_rate=cost_rate, regroups_dir=regroups_dir, simulations_dir=simulations_dir
