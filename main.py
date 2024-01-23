@@ -48,6 +48,11 @@ def parse_project_args():
     parser_sub.add_argument("--bgn", type=str, help="begin date, format = [YYYYMMDD]", required=True)
     parser_sub.add_argument("--stp", type=str, help="stop  date, format = [YYYYMMDD]", required=True)
 
+    # evaluation quick
+    parser_sub = parsers_sub.add_parser(name="plot-quick", help="Nav plot for quick simulations")
+    parser_sub.add_argument("--bgn", type=str, help="begin date, format = [YYYYMMDD]", required=True)
+    parser_sub.add_argument("--stp", type=str, help="stop  date, format = [YYYYMMDD]", required=True)
+
     return parser_main.parse_args()
 
 
@@ -276,5 +281,17 @@ if __name__ == "__main__":
             evaluations_dir=evaluations_dir_quick,
             simulations_dir=simulations_dir_quick
         )
+    elif args.switch == "plot-quick":
+        from project_setup import simulations_dir_quick, evaluations_dir_quick
+        from project_config import instruments_pairs, factors, diff_ret_delays
+        from evaluations import plot_factors_simu_quick
+
+        plot_factors_simu_quick(
+            factors=factors, diff_ret_delays=diff_ret_delays, instruments_pairs=instruments_pairs,
+            bgn_date=args.bgn, stp_date=args.stp,
+            plot_save_dir=evaluations_dir_quick,
+            simulations_dir=simulations_dir_quick
+        )
+
     else:
         raise ValueError
