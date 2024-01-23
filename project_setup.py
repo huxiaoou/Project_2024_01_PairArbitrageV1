@@ -12,6 +12,9 @@ factors_exposure_dir = os.path.join(project_save_dir, "factors_exposure")
 regroups_dir = os.path.join(project_save_dir, "regroups")
 ic_tests_dir = os.path.join(project_save_dir, "ic_tests")
 simulations_dir = os.path.join(project_save_dir, "simulations")
+evaluations_dir = os.path.join(project_save_dir, "evaluations")
+simulations_dir_quick = os.path.join(project_save_dir, os.path.join(simulations_dir, "quick"))
+evaluations_dir_quick = os.path.join(project_save_dir, os.path.join(evaluations_dir, "quick"))
 
 if __name__ == "__main__":
     from husfort.qutility import check_and_mkdir
@@ -22,3 +25,6 @@ if __name__ == "__main__":
     check_and_mkdir(regroups_dir)
     check_and_mkdir(ic_tests_dir)
     check_and_mkdir(simulations_dir)
+    check_and_mkdir(evaluations_dir)
+    check_and_mkdir(simulations_dir_quick)
+    check_and_mkdir(evaluations_dir_quick)

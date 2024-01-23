@@ -83,8 +83,8 @@ def cal_simulations(pair: tuple[str, str], delay: int,
     for factor in factors:
         simu_df = pivot_df[[factor, "diff_return"]].copy()
         simu_df["signal"] = np.sign(pivot_df[factor])
-        simu = CQuickSimu(simu_id=f"{pair_id}.{factor}.T{delay}", df=simu_df,
-                          sig="signal", ret="diff_return", cost_rate=cost_rate)
+        simu_id = f"{pair_id}.{factor}.T{delay}"
+        simu = CQuickSimu(simu_id=simu_id, df=simu_df, sig="signal", ret="diff_return", cost_rate=cost_rate)
         simu.main(run_mode=run_mode, simulations_dir=simulations_dir)
     return 0
 

@@ -29,19 +29,24 @@ def parse_project_args():
     parser_sub = parsers_sub.add_parser(name="regroups", help="Regroup factor exposure and diff return")
     parser_sub.add_argument("--mode", type=str, help="overwrite or append", choices=("o", "a"), required=True)
     parser_sub.add_argument("--bgn", type=str, help="begin date, format = [YYYYMMDD]", required=True)
-    parser_sub.add_argument("--stp", type=str, help="stop  date, format = [YYYYMMDD]")
+    parser_sub.add_argument("--stp", type=str, help="stop  date, format = [YYYYMMDD]", required=True)
 
     # ic-tests time series
     parser_sub = parsers_sub.add_parser(name="ic-tests", help="ic-tests")
     parser_sub.add_argument("--bgn", type=str, help="begin date, format = [YYYYMMDD]", required=True)
-    parser_sub.add_argument("--stp", type=str, help="stop  date, format = [YYYYMMDD]")
+    parser_sub.add_argument("--stp", type=str, help="stop  date, format = [YYYYMMDD]", required=True)
 
-    # quick simulation
-    parser_sub = parsers_sub.add_parser(name="quick-simu", help="Quick simulation for given factor and pairs")
+    # simulation quick
+    parser_sub = parsers_sub.add_parser(name="simu-quick", help="Quick simulation for given factor and pairs")
     parser_sub.add_argument("--mode", type=str, help="overwrite or append", choices=("o", "a"), required=True)
     parser_sub.add_argument("--bgn", type=str, help="begin date, format = [YYYYMMDD]", required=True)
-    parser_sub.add_argument("--stp", type=str, help="stop  date, format = [YYYYMMDD]")
+    parser_sub.add_argument("--stp", type=str, help="stop  date, format = [YYYYMMDD]", required=True)
     parser_sub.add_argument("--process", type=int, default=None, help="number of process")
+
+    # evaluation quick
+    parser_sub = parsers_sub.add_parser(name="eval-quick", help="Quick evaluation for given factor and pairs")
+    parser_sub.add_argument("--bgn", type=str, help="begin date, format = [YYYYMMDD]", required=True)
+    parser_sub.add_argument("--stp", type=str, help="stop  date, format = [YYYYMMDD]", required=True)
 
     return parser_main.parse_args()
 
@@ -249,8 +254,8 @@ if __name__ == "__main__":
             bgn_date=args.bgn, stp_date=args.stp, factors=factors,
             regroups_dir=regroups_dir, ic_tests_dir=ic_tests_dir
         )
-    elif args.switch == "quick-simu":
-        from project_setup import regroups_dir, simulations_dir
+    elif args.switch == "simu-quick":
+        from project_setup import regroups_dir, simulations_dir_quick
         from project_config import cost_rate, instruments_pairs, factors, diff_ret_delays
         from simulations import cal_simulations_pairs
 
@@ -258,7 +263,18 @@ if __name__ == "__main__":
             proc_qty=args.process,
             instruments_pairs=instruments_pairs, diff_ret_delays=diff_ret_delays,
             run_mode=args.mode, bgn_date=args.bgn, stp_date=args.stp, factors=factors,
-            cost_rate=cost_rate, regroups_dir=regroups_dir, simulations_dir=simulations_dir
+            cost_rate=cost_rate, regroups_dir=regroups_dir, simulations_dir=simulations_dir_quick
+        )
+    elif args.switch == "eval-quick":
+        from project_setup import simulations_dir_quick, evaluations_dir_quick
+        from project_config import instruments_pairs, factors, diff_ret_delays
+        from evaluations import cal_evaluations_quick
+
+        cal_evaluations_quick(
+            instruments_pairs=instruments_pairs, diff_ret_delays=diff_ret_delays, factors=factors,
+            bgn_date=args.bgn, stp_date=args.stp,
+            evaluations_dir=evaluations_dir_quick,
+            simulations_dir=simulations_dir_quick
         )
     else:
         raise ValueError
