@@ -15,6 +15,8 @@ simulations_dir = os.path.join(project_save_dir, "simulations")
 evaluations_dir = os.path.join(project_save_dir, "evaluations")
 simulations_dir_quick = os.path.join(project_save_dir, os.path.join(simulations_dir, "quick"))
 evaluations_dir_quick = os.path.join(project_save_dir, os.path.join(evaluations_dir, "quick"))
+models_dir = os.path.join(project_save_dir, "models")
+predictions_dir = os.path.join(project_save_dir, "predictions")
 
 if __name__ == "__main__":
     from husfort.qutility import check_and_mkdir
@@ -28,3 +30,5 @@ if __name__ == "__main__":
     check_and_mkdir(evaluations_dir)
     check_and_mkdir(simulations_dir_quick)
     check_and_mkdir(evaluations_dir_quick)
+    check_and_mkdir(models_dir)
+    check_and_mkdir(predictions_dir)

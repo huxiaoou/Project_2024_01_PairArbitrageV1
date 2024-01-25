@@ -53,6 +53,14 @@ def parse_project_args():
     parser_sub.add_argument("--bgn", type=str, help="begin date, format = [YYYYMMDD]", required=True)
     parser_sub.add_argument("--stp", type=str, help="stop  date, format = [YYYYMMDD]", required=True)
 
+    # machine learning
+    parser_sub = parsers_sub.add_parser(name="machine-learning", help="machine learning")
+    parser_sub.add_argument("--model", type=str, help="model", choices=(
+        "logistic"), required=True)
+    parser_sub.add_argument("--mode", type=str, help="overwrite or append", choices=("o", "a"), required=True)
+    parser_sub.add_argument("--bgn", type=str, help="begin date, format = [YYYYMMDD]", required=True)
+    parser_sub.add_argument("--stp", type=str, help="stop  date, format = [YYYYMMDD]", required=True)
+
     return parser_main.parse_args()
 
 
@@ -292,6 +300,24 @@ if __name__ == "__main__":
             plot_save_dir=evaluations_dir_quick,
             simulations_dir=simulations_dir_quick
         )
+    elif args.switch == "machine-learning":
+        from project_setup import models_dir, predictions_dir, regroups_dir, calendar_path
+        from project_config import instruments_pairs, factors
+        from husfort.qcalendar import CCalendar
 
+        calendar = CCalendar(calendar_path)
+        if args.model == "logistic":
+            from mlModels import CMLModelLogistic
+
+            m = CMLModelLogistic(
+                model_id="logistic_default",
+                pairs=instruments_pairs, delay=2, factors=factors, y_lbl="diff_return",
+                ml_models_dir=models_dir, predictions_dir=predictions_dir,
+                trn_win=3
+            )
+            m.main(
+                run_mode=args.mode, bgn_date=args.bgn, stp_date=args.stp,
+                calendar=calendar, regroups_dir=regroups_dir
+            )
     else:
         raise ValueError
