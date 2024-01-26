@@ -55,8 +55,14 @@ def parse_project_args():
 
     # machine learning
     parser_sub = parsers_sub.add_parser(name="machine-learning", help="machine learning")
-    parser_sub.add_argument("--model", type=str, help="model", choices=(
-        "logistic"), required=True)
+    parser_sub.add_argument("--model", type=str, help="which model", choices=("logistic",), required=True)
+    parser_sub.add_argument("--mode", type=str, help="overwrite or append", choices=("o", "a"), required=True)
+    parser_sub.add_argument("--bgn", type=str, help="begin date, format = [YYYYMMDD]", required=True)
+    parser_sub.add_argument("--stp", type=str, help="stop  date, format = [YYYYMMDD]", required=True)
+
+    # simulation machine learning
+    parser_sub = parsers_sub.add_parser(name="simu-mclrn", help="simulation for machine learning")
+    parser_sub.add_argument("--model", type=str, help="which model", choices=("logistic",), required=True)
     parser_sub.add_argument("--mode", type=str, help="overwrite or append", choices=("o", "a"), required=True)
     parser_sub.add_argument("--bgn", type=str, help="begin date, format = [YYYYMMDD]", required=True)
     parser_sub.add_argument("--stp", type=str, help="stop  date, format = [YYYYMMDD]", required=True)
@@ -318,6 +324,22 @@ if __name__ == "__main__":
             m.main(
                 run_mode=args.mode, bgn_date=args.bgn, stp_date=args.stp,
                 calendar=calendar, regroups_dir=regroups_dir
+            )
+    elif args.switch == "simu-mclrn":
+        from project_setup import predictions_dir, diff_returns_dir, simulations_dir_mclrn, calendar_path
+        from project_config import instruments_pairs, factors, cost_rate
+        from husfort.qcalendar import CCalendar
+        from simulations import cal_simulations_ml
+
+        calendar = CCalendar(calendar_path)
+        if args.model == "logistic":
+            cal_simulations_ml(
+                ml_model_id="logistic_default",
+                instrument_pairs=instruments_pairs,
+                run_mode=args.mode, bgn_date=args.bgn, stp_date=args.stp,
+                cost_rate=cost_rate, calendar=calendar,
+                predictions_dir=predictions_dir, diff_returns_dir=diff_returns_dir,
+                simulations_dir=simulations_dir_mclrn
             )
     else:
         raise ValueError
