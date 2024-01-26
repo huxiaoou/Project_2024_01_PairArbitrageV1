@@ -58,12 +58,12 @@ class CMLModel(object):
         return iter_dates, shift_dates
 
     @staticmethod
-    def is_model_update_date(this_date: str, next_date_1: str, next_date_2: str) -> bool:
-        return (this_date[0:6] == next_date_1[0:6]) and (this_date[0:6] != next_date_2[0:6])
+    def is_model_update_date(this_date: str, next_date: str) -> bool:
+        return this_date[0:6] != next_date[0:6]
 
     @staticmethod
-    def is_last_month_date(this_date: str, next_date: str) -> bool:
-        return this_date[0:6] != next_date[0:6]
+    def is_2_days_to_next_month(this_date: str, next_date_1: str, next_date_2: str) -> bool:
+        return (this_date[0:6] == next_date_1[0:6]) and (this_date[0:6] != next_date_2[0:6])
 
     @staticmethod
     def is_last_iter_date(trade_date: str, iter_dates: list[str]) -> bool:
@@ -97,13 +97,13 @@ class CMLModel(object):
     def _transform_y(self, y_srs: pd.Series) -> pd.Series:
         pass
 
-    def _fit(self, x: np.ndarray, y: np.ndarray):
-        pass
-
-    def _transform(self, train_df: pd.DataFrame) -> tuple[np.ndarray, np.ndarray]:
+    def _norm_and_trans(self, train_df: pd.DataFrame) -> tuple[np.ndarray, np.ndarray]:
         x = self._normalize(train_df[self.factors])
         y = self._transform_y(train_df[self.y_lbl])
         return x.values, y.values
+
+    def _fit(self, x: np.ndarray, y: np.ndarray):
+        pass
 
     def _apply_model(self, predict_df: pd.DataFrame) -> pd.DataFrame:
         norm_df = self._normalize(predict_df[self.factors])
@@ -148,28 +148,36 @@ class CMLModel(object):
         return 0
 
     def train(self, bgn_date: str, stp_date: str, calendar: CCalendar):
-        iter_dates, (next_dates_1, next_dates_2) = self.get_iter_dates(bgn_date, stp_date, calendar, shifts=[1, 2])
-        for (this_date, next_date_1, next_date_2) in zip(iter_dates, next_dates_1, next_dates_2):
-            if self.is_model_update_date(this_date, next_date_1, next_date_2):
+        iter_dates, (next_dates,) = self.get_iter_dates(bgn_date, stp_date, calendar, shifts=[1])
+        for (this_date, next_date) in zip(iter_dates, next_dates):
+            if self.is_model_update_date(this_date, next_date):
                 train_df = self._get_train_df(end_date=this_date)
-                x, y = self._transform(train_df)
+                x, y = self._norm_and_trans(train_df)
                 self._fit(x, y)
                 self._save_model(month_id=this_date[0:6])
                 print(f"{dt.datetime.now()} [INF] {SFG(self.model_id)} for {SFG(this_date[0:6])} trained")
         return 0
 
     def predict(self, bgn_date, stp_date, calendar: CCalendar) -> pd.DataFrame:
-        iter_dates, (next_dates,) = self.get_iter_dates(bgn_date, stp_date, calendar, shifts=[1])
+        iter_dates, (next_dates_1, next_dates_2) = self.get_iter_dates(bgn_date, stp_date, calendar, shifts=[1, 2])
+        month_dates: list[str] = []
         dfs: list[pd.DataFrame] = []
-        for (this_date, next_date) in zip(iter_dates, next_dates):
-            if self.is_last_month_date(this_date, next_date) or self.is_last_iter_date(this_date, iter_dates):
-                this_month = this_date[0:6]
+        for (this_date, next_date_1, next_date_2) in zip(iter_dates, next_dates_1, next_dates_2):
+            month_dates.append(this_date)
+            if (self.is_2_days_to_next_month(this_date, next_date_1, next_date_2)
+                    or self.is_last_iter_date(this_date, iter_dates)):
+                this_month = next_date_1[0:6]
                 prev_month = calendar.get_next_month(this_month, s=-1)
                 if self._load_model(month_id=prev_month):
-                    predict_df = self._get_predict_df(bgn_date=this_month + "01", end_date=this_date)
+                    predict_df = self._get_predict_df(bgn_date=month_dates[0], end_date=this_date)
                     pred_df = self._apply_model(predict_df)
                     dfs.append(pred_df)
+                    print(f"{dt.datetime.now()} [INF] model-id = {SFG(prev_month)}"
+                          f" predict month = {SFG(this_month)}"
+                          f" month dates = {SFG(month_dates[0])} -> {SFG(month_dates[-1])}"
+                          )
                     print(f"{dt.datetime.now()} [INF] {SFG(self.model_id)} for {SFG(this_date[0:6])} predicted")
+                month_dates.clear()  # prepare for next month
         predictions = pd.concat(dfs, axis=0, ignore_index=False).reset_index()
         return predictions
 
