@@ -69,3 +69,35 @@ def plot_factors_simu_quick(factors: list[str], diff_ret_delays: list[int], inst
         print(f"{dt.datetime.now()} [INF] quick simulation nav curve for {SFG(f'{factor}-T{delay}'):>24s} plotted",
               end="\r")
     return 0
+
+
+def cal_evaluations_mclrn(ml_model_ids: list[str], evaluations_dir: str, **kwargs):
+    eval_results = []
+    for ml_model_id in ml_model_ids:
+        d = cal_evaluations(simu_id=ml_model_id, **kwargs)
+        d.update({"model_id": ml_model_id})
+        eval_results.append(d)
+    eval_results_df = pd.DataFrame(eval_results)
+    eval_results_file = "eval.mclrn.csv"
+    eval_results_path = os.path.join(evaluations_dir, eval_results_file)
+    eval_results_df.to_csv(eval_results_path, index=False, float_format="%.8f")
+    return 0
+
+
+def plot_simu_mclrn(ml_model_ids: list[str], bgn_date: str, stp_date: str, simulations_dir: str, plot_save_dir: str):
+    nav_data = {}
+    for ml_model_id in ml_model_ids:
+        lib_simu_reader = CLibSimu(simu_id=ml_model_id, lib_save_dir=simulations_dir).get_lib_reader()
+        net_ret_df = lib_simu_reader.read_by_conditions(conditions=[
+            ("trade_date", ">=", bgn_date),
+            ("trade_date", "<", stp_date),
+        ], value_columns=["trade_date", "netRet"]).set_index("trade_date")
+        nav_data[ml_model_id] = (net_ret_df["netRet"] + 1).cumprod()
+    nav_df = pd.DataFrame(nav_data)
+    artist = CPlotLines(
+        line_width=1, fig_save_dir=plot_save_dir, fig_save_type="PNG",
+        line_style=["-"] * 10 + ["-."] * 10,
+        fig_name=f"simu_mclrn", plot_df=nav_df,
+    )
+    artist.plot()
+    return 0

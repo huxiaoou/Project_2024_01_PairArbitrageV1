@@ -48,11 +48,6 @@ def parse_project_args():
     parser_sub.add_argument("--bgn", type=str, help="begin date, format = [YYYYMMDD]", required=True)
     parser_sub.add_argument("--stp", type=str, help="stop  date, format = [YYYYMMDD]", required=True)
 
-    # evaluation quick
-    parser_sub = parsers_sub.add_parser(name="plot-quick", help="Nav plot for quick simulations")
-    parser_sub.add_argument("--bgn", type=str, help="begin date, format = [YYYYMMDD]", required=True)
-    parser_sub.add_argument("--stp", type=str, help="stop  date, format = [YYYYMMDD]", required=True)
-
     # machine learning
     parser_sub = parsers_sub.add_parser(name="machine-learning", help="machine learning")
     parser_sub.add_argument("--model", type=str, help="which model", choices=("logistic",), required=True)
@@ -64,6 +59,11 @@ def parse_project_args():
     parser_sub = parsers_sub.add_parser(name="simu-mclrn", help="simulation for machine learning")
     parser_sub.add_argument("--model", type=str, help="which model", choices=("logistic",), required=True)
     parser_sub.add_argument("--mode", type=str, help="overwrite or append", choices=("o", "a"), required=True)
+    parser_sub.add_argument("--bgn", type=str, help="begin date, format = [YYYYMMDD]", required=True)
+    parser_sub.add_argument("--stp", type=str, help="stop  date, format = [YYYYMMDD]", required=True)
+
+    # evaluation machine learning
+    parser_sub = parsers_sub.add_parser(name="eval-mclrn", help="evaluation for machine learning")
     parser_sub.add_argument("--bgn", type=str, help="begin date, format = [YYYYMMDD]", required=True)
     parser_sub.add_argument("--stp", type=str, help="stop  date, format = [YYYYMMDD]", required=True)
 
@@ -287,7 +287,7 @@ if __name__ == "__main__":
     elif args.switch == "eval-quick":
         from project_setup import simulations_dir_quick, evaluations_dir_quick
         from project_config import instruments_pairs, factors, diff_ret_delays
-        from evaluations import cal_evaluations_quick
+        from evaluations import cal_evaluations_quick, plot_factors_simu_quick
 
         cal_evaluations_quick(
             instruments_pairs=instruments_pairs, diff_ret_delays=diff_ret_delays, factors=factors,
@@ -295,11 +295,6 @@ if __name__ == "__main__":
             evaluations_dir=evaluations_dir_quick,
             simulations_dir=simulations_dir_quick
         )
-    elif args.switch == "plot-quick":
-        from project_setup import simulations_dir_quick, evaluations_dir_quick
-        from project_config import instruments_pairs, factors, diff_ret_delays
-        from evaluations import plot_factors_simu_quick
-
         plot_factors_simu_quick(
             factors=factors, diff_ret_delays=diff_ret_delays, instruments_pairs=instruments_pairs,
             bgn_date=args.bgn, stp_date=args.stp,
@@ -341,5 +336,21 @@ if __name__ == "__main__":
                 predictions_dir=predictions_dir, diff_returns_dir=diff_returns_dir,
                 simulations_dir=simulations_dir_mclrn
             )
+    elif args.switch == "eval-mclrn":
+        from project_setup import simulations_dir_mclrn, evaluations_dir_mclrn
+        from evaluations import cal_evaluations_mclrn, plot_simu_mclrn
+
+        cal_evaluations_mclrn(
+            ml_model_ids=["logistic_default"],
+            bgn_date=args.bgn, stp_date=args.stp,
+            evaluations_dir=evaluations_dir_mclrn,
+            simulations_dir=simulations_dir_mclrn
+        )
+        plot_simu_mclrn(
+            ml_model_ids=["logistic_default"],
+            bgn_date=args.bgn, stp_date=args.stp,
+            plot_save_dir=evaluations_dir_mclrn,
+            simulations_dir=simulations_dir_mclrn
+        )
     else:
         raise ValueError
