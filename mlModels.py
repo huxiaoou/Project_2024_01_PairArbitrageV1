@@ -5,6 +5,7 @@ import scipy.stats as sps
 import skops.io as sio
 import pandas as pd
 from sklearn.linear_model import LogisticRegressionCV
+from sklearn.neural_network import MLPClassifier
 from husfort.qcalendar import CCalendar
 from husfort.qutility import check_and_mkdir, SFG, SFY
 from husfort.qsqlite import CQuickSqliteLib, CLib1Tab1, CTable
@@ -33,14 +34,11 @@ class CLibPredictions(CQuickSqliteLib):
 class CMLModel(object):
     def __init__(self, model_id: str,
                  pairs: list[tuple[str, str]], delay: int, factors: list[str], y_lbl: str,
-                 ml_models_dir: str, predictions_dir: str,
                  trn_win: int, days_per_month: int = 20, normalize_alpha: float = 0.05):
         self.model_id = model_id
         self.pairs = pairs
         self.delay = delay
         self.factors, self.y_lbl = factors, y_lbl
-        self.ml_models_dir = ml_models_dir
-        self.predictions_dir = predictions_dir
         self.train_win = trn_win
         self.days_per_month = days_per_month
         if (normalize_alpha > 0.5) or (normalize_alpha <= 0):
@@ -112,17 +110,17 @@ class CMLModel(object):
         pred = pd.DataFrame(data={"pred": p}, index=predict_df.index)
         return pred
 
-    def _save_model(self, month_id: str):
+    def _save_model(self, month_id: str, models_dir: str):
         model_file = f"{month_id}.{self.model_id}.skops"
-        month_dir = os.path.join(self.ml_models_dir, month_id)
+        month_dir = os.path.join(models_dir, month_id)
         model_path = os.path.join(month_dir, model_file)
         check_and_mkdir(month_dir)
         sio.dump(self.model_obj, model_path)
         return 0
 
-    def _load_model(self, month_id: str) -> bool:
+    def _load_model(self, month_id: str, models_dir: str) -> bool:
         model_file = f"{month_id}.{self.model_id}.skops"
-        month_dir = os.path.join(self.ml_models_dir, month_id)
+        month_dir = os.path.join(models_dir, month_id)
         model_path = os.path.join(month_dir, model_file)
         if os.path.exists(model_path):
             self.model_obj = sio.load(model_path, trusted=True)
@@ -147,18 +145,18 @@ class CMLModel(object):
         self.core_data = self.core_data[self.factors + [self.y_lbl]]
         return 0
 
-    def train(self, bgn_date: str, stp_date: str, calendar: CCalendar):
+    def train(self, bgn_date: str, stp_date: str, calendar: CCalendar, models_dir: str):
         iter_dates, (next_dates,) = self.get_iter_dates(bgn_date, stp_date, calendar, shifts=[1])
         for (this_date, next_date) in zip(iter_dates, next_dates):
             if self.is_model_update_date(this_date, next_date):
                 train_df = self._get_train_df(end_date=this_date)
                 x, y = self._norm_and_trans(train_df)
                 self._fit(x, y)
-                self._save_model(month_id=this_date[0:6])
+                self._save_model(month_id=this_date[0:6], models_dir=models_dir)
                 print(f"{dt.datetime.now()} [INF] {SFG(self.model_id)} for {SFG(this_date[0:6])} trained")
         return 0
 
-    def predict(self, bgn_date, stp_date, calendar: CCalendar) -> pd.DataFrame:
+    def predict(self, bgn_date, stp_date, calendar: CCalendar, models_dir: str) -> pd.DataFrame:
         iter_dates, (next_dates_1, next_dates_2) = self.get_iter_dates(bgn_date, stp_date, calendar, shifts=[1, 2])
         month_dates: list[str] = []
         dfs: list[pd.DataFrame] = []
@@ -168,32 +166,32 @@ class CMLModel(object):
                     or self.is_last_iter_date(this_date, iter_dates)):
                 this_month = next_date_1[0:6]
                 prev_month = calendar.get_next_month(this_month, s=-1)
-                if self._load_model(month_id=prev_month):
-                    predict_df = self._get_predict_df(bgn_date=month_dates[0], end_date=this_date)
+                if self._load_model(month_id=prev_month, models_dir=models_dir):
+                    pred_bgn_date, pred_end_date = month_dates[0], this_date
+                    predict_df = self._get_predict_df(bgn_date=pred_bgn_date, end_date=pred_end_date)
                     pred_df = self._apply_model(predict_df)
                     dfs.append(pred_df)
-                    print(f"{dt.datetime.now()} [INF] model-id = {SFG(prev_month)}"
-                          f" predict month = {SFG(this_month)}"
-                          f" month dates = {SFG(month_dates[0])} -> {SFG(month_dates[-1])}"
+                    print(f"{dt.datetime.now()} [INF] model-month-id = {SFG(prev_month)}"
+                          f" predict month = {SFG(this_month)}: {SFG(pred_bgn_date)} -> {SFG(pred_end_date)}"
                           )
                     print(f"{dt.datetime.now()} [INF] {SFG(self.model_id)} for {SFG(this_date[0:6])} predicted")
                 month_dates.clear()  # prepare for next month
         predictions = pd.concat(dfs, axis=0, ignore_index=False).reset_index()
         return predictions
 
-    def save_prediction(self, df: pd.DataFrame, run_mode: str):
-        lib_pred_writer = CLibPredictions(self.model_id, self.predictions_dir).get_lib_writer(run_mode)
+    def save_prediction(self, df: pd.DataFrame, run_mode: str, predictions_dir: str):
+        lib_pred_writer = CLibPredictions(self.model_id, predictions_dir).get_lib_writer(run_mode)
         lib_pred_writer.update(update_df=df, using_index=False)
         lib_pred_writer.commit()
         lib_pred_writer.close()
         return 0
 
     def main(self, run_mode: str, bgn_date: str, stp_date: str, calendar: CCalendar,
-             regroups_dir: str):
+             regroups_dir: str, models_dir: str, predictions_dir: str):
         self.load_data(bgn_date, stp_date, regroups_dir)
-        self.train(bgn_date, stp_date, calendar)
-        predictions = self.predict(bgn_date, stp_date, calendar)
-        self.save_prediction(predictions, run_mode)
+        self.train(bgn_date, stp_date, calendar, models_dir)
+        predictions = self.predict(bgn_date, stp_date, calendar, models_dir)
+        self.save_prediction(predictions, run_mode, predictions_dir)
         return 0
 
 
@@ -215,5 +213,23 @@ class CMLModelLogistic(CMLModel):
             cv=self.cv, Cs=self.cs, max_iter=self.max_iter,
             fit_intercept=self.fit_intercept, penalty=self.penalty,
             random_state=0)
+        self.model_obj = obj_cv.fit(X=x, y=y)
+        return 0
+
+
+class CMLMlp(CMLModel):
+    def __init__(self, hidden_layer_size=(20, 20, 20), max_iter: int = 5000,
+                 **kwargs):
+        self.hidden_layer_size = hidden_layer_size
+        self.max_iter = max_iter
+        super().__init__(**kwargs)
+
+    def _transform_y(self, y_srs: pd.Series) -> pd.Series:
+        return y_srs.map(lambda z: 1 if z >= 0 else 0)
+
+    def _fit(self, x: np.ndarray, y: np.ndarray):
+        obj_cv = MLPClassifier(
+            hidden_layer_sizes=self.hidden_layer_size,
+            max_iter=self.max_iter)
         self.model_obj = obj_cv.fit(X=x, y=y)
         return 0

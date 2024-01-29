@@ -1,6 +1,7 @@
 $bgn_date_diff = "20160104"
 $bgn_date_fact = $bgn_date_diff
 $bgn_date_regp = "20160401"
+$bgn_date_mclrn = "20160701"
 $bgn_date_ictt = $bgn_date_regp
 $bgn_date_simu = $bgn_date_regp
 $stp_date = "20240122"
@@ -33,3 +34,8 @@ python main.py ic-tests          --bgn $bgn_date_ictt --stp $stp_date
 
 # quick simulations
 python main.py quick-simu --mode o --bgn $bgn_date_simu --stp $stp_date
+
+# machine learning
+python main.py mclrn      --mode o --bgn $bgn_date_mclrn --stp $stp_date
+python main.py simu-mclrn          --bgn $bgn_date_mclrn --stp $stp_date
+python main.py eval-mclrn          --bgn $bgn_date_mclrn --stp $stp_date

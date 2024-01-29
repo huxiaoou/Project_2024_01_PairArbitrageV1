@@ -1,3 +1,5 @@
+from mlModels import CMLModel, CMLModelLogistic, CMLMlp
+
 instruments_pairs = [
     ("A.DCE", "M.DCE"),
     ("A.DCE", "Y.DCE"),
@@ -117,6 +119,19 @@ pairs_qty = len(instruments_pairs)
 factors_qty = len(factors)
 diff_ret_delays = [1, 2]
 cost_rate = 0e-4
+
+models_mclrn: dict[str, CMLModel] = {
+    "M00": CMLModelLogistic(
+        model_id="M00",
+        pairs=instruments_pairs, delay=2, factors=factors, y_lbl="diff_return",
+        trn_win=3,
+    ),
+    "M01": CMLMlp(
+        model_id="M01",
+        pairs=instruments_pairs, delay=2, factors=factors, y_lbl="diff_return",
+        trn_win=3
+    )
+}
 
 if __name__ == "__main__":
     print(f"quantity of pairs   = {pairs_qty}")

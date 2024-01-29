@@ -48,21 +48,23 @@ def parse_project_args():
     parser_sub.add_argument("--bgn", type=str, help="begin date, format = [YYYYMMDD]", required=True)
     parser_sub.add_argument("--stp", type=str, help="stop  date, format = [YYYYMMDD]", required=True)
 
-    # machine learning
-    parser_sub = parsers_sub.add_parser(name="machine-learning", help="machine learning")
-    parser_sub.add_argument("--model", type=str, help="which model", choices=("logistic",), required=True)
+    # ------------------------
+    # --- machine learning ---
+    # ------------------------
+    model_ids = ("M00", "M01")
+
+    # train and predict
+    parser_sub = parsers_sub.add_parser(name="mclrn", help="machine learning")
     parser_sub.add_argument("--mode", type=str, help="overwrite or append", choices=("o", "a"), required=True)
     parser_sub.add_argument("--bgn", type=str, help="begin date, format = [YYYYMMDD]", required=True)
     parser_sub.add_argument("--stp", type=str, help="stop  date, format = [YYYYMMDD]", required=True)
 
-    # simulation machine learning
+    # simulation
     parser_sub = parsers_sub.add_parser(name="simu-mclrn", help="simulation for machine learning")
-    parser_sub.add_argument("--model", type=str, help="which model", choices=("logistic",), required=True)
-    parser_sub.add_argument("--mode", type=str, help="overwrite or append", choices=("o", "a"), required=True)
     parser_sub.add_argument("--bgn", type=str, help="begin date, format = [YYYYMMDD]", required=True)
     parser_sub.add_argument("--stp", type=str, help="stop  date, format = [YYYYMMDD]", required=True)
 
-    # evaluation machine learning
+    # evaluation
     parser_sub = parsers_sub.add_parser(name="eval-mclrn", help="evaluation for machine learning")
     parser_sub.add_argument("--bgn", type=str, help="begin date, format = [YYYYMMDD]", required=True)
     parser_sub.add_argument("--stp", type=str, help="stop  date, format = [YYYYMMDD]", required=True)
@@ -301,53 +303,47 @@ if __name__ == "__main__":
             plot_save_dir=evaluations_dir_quick,
             simulations_dir=simulations_dir_quick
         )
-    elif args.switch == "machine-learning":
+    elif args.switch == "mclrn":
         from project_setup import models_dir, predictions_dir, regroups_dir, calendar_path
-        from project_config import instruments_pairs, factors
+        from project_config import models_mclrn
         from husfort.qcalendar import CCalendar
 
         calendar = CCalendar(calendar_path)
-        if args.model == "logistic":
-            from mlModels import CMLModelLogistic
-
-            m = CMLModelLogistic(
-                model_id="logistic_default",
-                pairs=instruments_pairs, delay=2, factors=factors, y_lbl="diff_return",
-                ml_models_dir=models_dir, predictions_dir=predictions_dir,
-                trn_win=3
-            )
+        for _, m in models_mclrn.items():
             m.main(
                 run_mode=args.mode, bgn_date=args.bgn, stp_date=args.stp,
-                calendar=calendar, regroups_dir=regroups_dir
+                calendar=calendar, regroups_dir=regroups_dir,
+                models_dir=models_dir, predictions_dir=predictions_dir
             )
     elif args.switch == "simu-mclrn":
         from project_setup import predictions_dir, diff_returns_dir, simulations_dir_mclrn, calendar_path
-        from project_config import instruments_pairs, factors, cost_rate
+        from project_config import instruments_pairs, factors, cost_rate, models_mclrn
         from husfort.qcalendar import CCalendar
         from simulations import cal_simulations_ml
 
         calendar = CCalendar(calendar_path)
-        if args.model == "logistic":
+        for model_id in models_mclrn:
             cal_simulations_ml(
-                ml_model_id="logistic_default",
+                ml_model_id=model_id,
                 instrument_pairs=instruments_pairs,
-                run_mode=args.mode, bgn_date=args.bgn, stp_date=args.stp,
+                run_mode="o", bgn_date=args.bgn, stp_date=args.stp,
                 cost_rate=cost_rate, calendar=calendar,
                 predictions_dir=predictions_dir, diff_returns_dir=diff_returns_dir,
                 simulations_dir=simulations_dir_mclrn
             )
     elif args.switch == "eval-mclrn":
         from project_setup import simulations_dir_mclrn, evaluations_dir_mclrn
+        from project_config import models_mclrn
         from evaluations import cal_evaluations_mclrn, plot_simu_mclrn
 
         cal_evaluations_mclrn(
-            ml_model_ids=["logistic_default"],
+            ml_model_ids=list(models_mclrn),
             bgn_date=args.bgn, stp_date=args.stp,
             evaluations_dir=evaluations_dir_mclrn,
             simulations_dir=simulations_dir_mclrn
         )
         plot_simu_mclrn(
-            ml_model_ids=["logistic_default"],
+            ml_model_ids=list(models_mclrn),
             bgn_date=args.bgn, stp_date=args.stp,
             plot_save_dir=evaluations_dir_mclrn,
             simulations_dir=simulations_dir_mclrn
