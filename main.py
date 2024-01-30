@@ -51,7 +51,6 @@ def parse_project_args():
     # ------------------------
     # --- machine learning ---
     # ------------------------
-    model_ids = ("M00", "M01")
 
     # train and predict
     parser_sub = parsers_sub.add_parser(name="mclrn", help="machine learning")
@@ -317,17 +316,16 @@ if __name__ == "__main__":
             )
     elif args.switch == "simu-mclrn":
         from project_setup import predictions_dir, diff_returns_dir, simulations_dir_mclrn, calendar_path
-        from project_config import instruments_pairs, factors, cost_rate, models_mclrn
+        from project_config import cost_rate, models_mclrn
         from husfort.qcalendar import CCalendar
-        from simulations import cal_simulations_ml
+        from simulations import CSimuMclrn
 
         calendar = CCalendar(calendar_path)
-        for model_id in models_mclrn:
-            cal_simulations_ml(
-                ml_model_id=model_id,
-                instrument_pairs=instruments_pairs,
+        for _, m in models_mclrn.items():
+            s = CSimuMclrn(model=m)
+            s.main(
                 run_mode="o", bgn_date=args.bgn, stp_date=args.stp,
-                cost_rate=cost_rate, calendar=calendar,
+                calendar=calendar, cost_rate=cost_rate,
                 predictions_dir=predictions_dir, diff_returns_dir=diff_returns_dir,
                 simulations_dir=simulations_dir_mclrn
             )

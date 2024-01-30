@@ -1,4 +1,4 @@
-from mlModels import CMLModel, CMLModelLogistic, CMLMlp
+from mclrn import CMLModel, CMLModelLogistic, CMLMlp, CMLLr
 
 instruments_pairs = [
     ("A.DCE", "M.DCE"),
@@ -124,13 +124,18 @@ models_mclrn: dict[str, CMLModel] = {
     "M00": CMLModelLogistic(
         model_id="M00",
         pairs=instruments_pairs, delay=2, factors=factors, y_lbl="diff_return",
-        trn_win=3,
+        sig_method="binary", trn_win=3,
     ),
     "M01": CMLMlp(
         model_id="M01",
         pairs=instruments_pairs, delay=2, factors=factors, y_lbl="diff_return",
-        trn_win=3
-    )
+        sig_method="binary", trn_win=3
+    ),
+    "M02": CMLLr(
+        model_id="M02",
+        pairs=instruments_pairs, delay=2, factors=factors, y_lbl="diff_return",
+        sig_method="continuous", trn_win=3
+    ),
 }
 
 if __name__ == "__main__":

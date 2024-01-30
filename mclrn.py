@@ -4,6 +4,7 @@ import numpy as np
 import scipy.stats as sps
 import skops.io as sio
 import pandas as pd
+from sklearn.linear_model import LinearRegression
 from sklearn.linear_model import LogisticRegressionCV
 from sklearn.neural_network import MLPClassifier
 from husfort.qcalendar import CCalendar
@@ -34,17 +35,27 @@ class CLibPredictions(CQuickSqliteLib):
 class CMLModel(object):
     def __init__(self, model_id: str,
                  pairs: list[tuple[str, str]], delay: int, factors: list[str], y_lbl: str,
+                 sig_method: str,
                  trn_win: int, days_per_month: int = 20, normalize_alpha: float = 0.05):
         self.model_id = model_id
         self.pairs = pairs
         self.delay = delay
         self.factors, self.y_lbl = factors, y_lbl
-        self.train_win = trn_win
-        self.days_per_month = days_per_month
+        self.train_win, self.days_per_month = trn_win, days_per_month
+
+        # ---
+        if sig_method not in ["binary", "continuous"]:
+            print(f"{dt.datetime.now()} [ERR] sig method = {sig_method} is illegal")
+            raise ValueError
+        self.sig_method = sig_method
+
+        # ---
         if (normalize_alpha > 0.5) or (normalize_alpha <= 0):
             print(f"{dt.datetime.now()} [ERR] alpha = {normalize_alpha}")
             raise ValueError
         self.normalize_alpha = normalize_alpha
+
+        # ---
         self.core_data: pd.DataFrame = pd.DataFrame()
         self.model_obj = None
 
@@ -231,5 +242,19 @@ class CMLMlp(CMLModel):
         obj_cv = MLPClassifier(
             hidden_layer_sizes=self.hidden_layer_size,
             max_iter=self.max_iter)
+        self.model_obj = obj_cv.fit(X=x, y=y)
+        return 0
+
+
+class CMLLr(CMLModel):
+    def __init__(self, fit_intercept: bool = True, **kwargs):
+        self.fit_intercept = fit_intercept
+        super().__init__(**kwargs)
+
+    def _transform_y(self, y_srs: pd.Series) -> pd.Series:
+        return y_srs
+
+    def _fit(self, x: np.ndarray, y: np.ndarray):
+        obj_cv = LinearRegression(fit_intercept=self.fit_intercept)
         self.model_obj = obj_cv.fit(X=x, y=y)
         return 0

@@ -8,7 +8,7 @@ from husfort.qcalendar import CCalendar
 from husfort.qsqlite import CQuickSqliteLib, CLib1Tab1, CTable
 from regroups import CLibRegroups
 from returns_diff import CLibDiffReturn
-from mlModels import CLibPredictions
+from mclrn import CMLModel, CLibPredictions
 
 
 class CLibSimu(CQuickSqliteLib):
@@ -37,7 +37,7 @@ class CLibSimu(CQuickSqliteLib):
         )
 
 
-class CQuickSimu(object):
+class CSimuQuick(object):
     def __init__(self, simu_id: str, df: pd.DataFrame, sig: str, ret: str, cost_rate: float):
         """
 
@@ -87,7 +87,7 @@ def cal_simulations(pair: tuple[str, str], delay: int,
         simu_df = pivot_df[[factor, "diff_return"]].copy()
         simu_df["signal"] = np.sign(pivot_df[factor])
         simu_id = f"{pair_id}.{factor}.T{delay}"
-        simu = CQuickSimu(simu_id=simu_id, df=simu_df, sig="signal", ret="diff_return", cost_rate=cost_rate)
+        simu = CSimuQuick(simu_id=simu_id, df=simu_df, sig="signal", ret="diff_return", cost_rate=cost_rate)
         simu.main(run_mode=run_mode, simulations_dir=simulations_dir)
     return 0
 
@@ -102,76 +102,111 @@ def cal_simulations_pairs(instruments_pairs: list[tuple[str, str]], diff_ret_del
     return 0
 
 
-def cal_simulations_ml(ml_model_id: str, instrument_pairs: list[tuple[str, str]],
-                       run_mode: str, bgn_date: str, stp_date: str, cost_rate: float,
-                       calendar: CCalendar,
-                       predictions_dir: str, diff_returns_dir: str, simulations_dir: str, ):
-    pair_ids = ["_".join(p) for p in instrument_pairs]
-    ret_dates = calendar.get_iter_list(bgn_date, stp_date)
-    sig_dates = calendar.shift_iter_dates(ret_dates, -2)
+class CSimuMclrn(object):
+    def __init__(self, model: CMLModel):
+        self.model_id = model.model_id
+        self.pairs = model.pairs
+        self.pair_ids = ["_".join(p) for p in self.pairs]
+        self.factors = model.factors
+        self.sig_method = model.sig_method
+        self.signals = pd.DataFrame()
+        self.signals_aligned = pd.DataFrame()
+        self.weight_diff = pd.DataFrame()
+        self.rets = pd.DataFrame()
+        self.simu_pair_rets = pd.DataFrame()
+        self.simu_rets = pd.DataFrame()
 
-    # --- load signal
-    lib_pred = CLibPredictions(ml_model_id, predictions_dir).get_lib_reader()
-    pred_df = lib_pred.read_by_conditions(conditions=[
-        ("trade_date", ">=", sig_dates[0]),
-        ("trade_date", "<=", sig_dates[-1]),
-    ], value_columns=["trade_date", "pair", "value"])
-    sig_df = pd.pivot_table(pred_df, index="trade_date", columns="pair", values="value")
-    sig_df = sig_df[pair_ids].applymap(lambda z: 2 * z - 1).fillna(0)
-    dlt_wgt_abs_sum = sig_df.abs().sum(axis=1)
-    sig_df = sig_df.div(dlt_wgt_abs_sum, axis=0)
+    @staticmethod
+    def _get_dates(bgn_date: str, stp_date: str, calendar: CCalendar) -> tuple[list[str], list[str]]:
+        ret_dates = calendar.get_iter_list(bgn_date, stp_date)
+        sig_dates = calendar.shift_iter_dates(ret_dates, -2)
+        return sig_dates, ret_dates
 
-    # --- align signal
-    bridge = pd.DataFrame({"ret_date": ret_dates, "sig_date": sig_dates})
-    aligned_sig_df = pd.merge(
-        left=bridge, right=sig_df,
-        left_on="sig_date", right_index=True, how="left"
-    )
-    aligned_sig_df = aligned_sig_df.set_index("ret_date").drop(axis=1, labels=["sig_date"]).fillna(0)
+    def _load_signal(self, sig_bgn_date: str, sig_end_date: str, predictions_dir: str):
+        lib_pred = CLibPredictions(self.model_id, predictions_dir).get_lib_reader()
+        pred_df = lib_pred.read_by_conditions(conditions=[
+            ("trade_date", ">=", sig_bgn_date),
+            ("trade_date", "<=", sig_end_date),
+        ], value_columns=["trade_date", "pair", "value"])
+        signals = pd.pivot_table(pred_df, index="trade_date", columns="pair", values="value")
+        if self.sig_method == "binary":
+            signals = signals[self.pair_ids].applymap(lambda z: 2 * z - 1).fillna(0)
+        else:  # self.sig_method == "continuous":
+            signals = signals[self.pair_ids].applymap(lambda z: np.sign(z)).fillna(0)
+        dlt_wgt_abs_sum = signals.abs().sum(axis=1)
+        self.signals = signals.div(dlt_wgt_abs_sum, axis=0)
+        return 0
 
-    # --- diff weight
-    dlt_wgt_df = aligned_sig_df - aligned_sig_df.shift(1).fillna(0)
-
-    # --- load ret
-    ret_dfs: list[pd.DataFrame] = []
-    for pair, pair_id in zip(instrument_pairs, pair_ids):
-        lib_diff_return = CLibDiffReturn(pair, diff_returns_dir).get_lib_reader()
-        pair_df = lib_diff_return.read_by_conditions(
-            conditions=[
-                ("trade_date", ">=", ret_dates[0]),
-                ("trade_date", "<=", ret_dates[-1]),
-            ], value_columns=["trade_date", "diff_return"]
+    def _align_signal(self, ret_dates: list[str], sig_dates: list[str]):
+        bridge = pd.DataFrame({"ret_date": ret_dates, "sig_date": sig_dates})
+        signals_aligned_df = pd.merge(
+            left=bridge, right=self.signals,
+            left_on="sig_date", right_index=True, how="left"
         )
-        pair_df["pair"] = pair_id
-        ret_dfs.append(pair_df)
-    ret_con_df = pd.concat(ret_dfs, axis=0, ignore_index=True)
-    ret_df = pd.pivot_table(data=ret_con_df, index="trade_date", columns="pair", values="diff_return")
-    ret_df = ret_df[pair_ids].fillna(0)
+        self.signals_aligned = signals_aligned_df.set_index("ret_date").drop(axis=1, labels=["sig_date"]).fillna(0)
+        return 0
 
-    # --- raw ret
-    if aligned_sig_df.shape != ret_df.shape:
-        print(f"{dt.datetime.now()} [ERR] signal shape = {aligned_sig_df.shape}, return shape = {ret_df.shape}")
-        raise ValueError
+    def _cal_weight_diff(self):
+        self.weight_diff = self.signals_aligned - self.signals_aligned.shift(1).fillna(0)
+        return 0
 
-    pair_ret_df = aligned_sig_df * ret_df
-    raw_ret: pd.Series = pair_ret_df.mean(axis=1)
-    dlt_wgt_abs_sum: pd.Series = dlt_wgt_df.abs().sum(axis=1)
-    cost: pd.Series = dlt_wgt_abs_sum * cost_rate
-    net_ret: pd.Series = raw_ret - cost
-    simu_df = pd.DataFrame({
-        "signal": None,
-        "rawRet": raw_ret,
-        "dltWgt": dlt_wgt_abs_sum,
-        "cost": cost,
-        "netRet": net_ret,
-        "cumNetRet": net_ret.cumsum()
-    })
+    def _load_ret(self, ret_bgn_date: str, ret_end_date: str, diff_returns_dir: str):
+        ret_dfs: list[pd.DataFrame] = []
+        for pair, pair_id in zip(self.pairs, self.pair_ids):
+            lib_diff_return = CLibDiffReturn(pair, diff_returns_dir).get_lib_reader()
+            pair_df = lib_diff_return.read_by_conditions(
+                conditions=[
+                    ("trade_date", ">=", ret_bgn_date),
+                    ("trade_date", "<=", ret_end_date),
+                ], value_columns=["trade_date", "diff_return"]
+            )
+            pair_df["pair"] = pair_id
+            ret_dfs.append(pair_df)
+        ret_con_df = pd.concat(ret_dfs, axis=0, ignore_index=True)
+        rets = pd.pivot_table(data=ret_con_df, index="trade_date", columns="pair", values="diff_return")
+        self.rets = rets[self.pair_ids].fillna(0)
+        return 0
 
-    lib_simu_writer = CLibSimu(simu_id=ml_model_id, lib_save_dir=simulations_dir).get_lib_writer(run_mode)
-    lib_simu_writer.update(update_df=simu_df, using_index=True)
-    lib_simu_writer.commit()
-    lib_simu_writer.close()
+    def _check_shape(self):
+        if self.signals_aligned.shape != self.rets.shape:
+            print(f"{dt.datetime.now()} [ERR] signal shape = {self.signals_aligned.shape},"
+                  f" return shape = {self.rets.shape}")
+            raise ValueError
+        return 0
 
-    print(f"{dt.datetime.now()} [INF] simulation for {SFG(ml_model_id)}"
-          f" from {SFG(bgn_date)} to {SFG(stp_date)} are calculated")
-    return 0
+    def _cal_ret(self, cost_rate: float):
+        self.simu_pair_rets = self.signals_aligned * self.rets
+        raw_ret: pd.Series = self.simu_pair_rets.mean(axis=1)
+        dlt_wgt_abs_sum: pd.Series = self.weight_diff.abs().sum(axis=1)
+        cost: pd.Series = dlt_wgt_abs_sum * cost_rate
+        net_ret: pd.Series = raw_ret - cost
+        self.simu_rets = pd.DataFrame({
+            "signal": None,
+            "rawRet": raw_ret,
+            "dltWgt": dlt_wgt_abs_sum,
+            "cost": cost,
+            "netRet": net_ret,
+            "cumNetRet": (net_ret + 1).cumprod()
+        })
+        return 0
+
+    def _save(self, simulations_dir: str, run_mode: str):
+        lib_simu_writer = CLibSimu(simu_id=self.model_id, lib_save_dir=simulations_dir).get_lib_writer(run_mode)
+        lib_simu_writer.update(update_df=self.simu_rets, using_index=True)
+        lib_simu_writer.commit()
+        lib_simu_writer.close()
+        return 0
+
+    def main(self, run_mode: str, bgn_date: str, stp_date: str, calendar: CCalendar, cost_rate: float,
+             predictions_dir: str, diff_returns_dir: str, simulations_dir: str):
+        sig_dates, ret_dates = self._get_dates(bgn_date, stp_date, calendar)
+        self._load_signal(sig_bgn_date=sig_dates[0], sig_end_date=sig_dates[-1], predictions_dir=predictions_dir)
+        self._align_signal(ret_dates, sig_dates)
+        self._cal_weight_diff()
+        self._load_ret(ret_bgn_date=ret_dates[0], ret_end_date=ret_dates[-1], diff_returns_dir=diff_returns_dir)
+        self._check_shape()
+        self._cal_ret(cost_rate)
+        self._save(simulations_dir=simulations_dir, run_mode=run_mode)
+        print(f"{dt.datetime.now()} [INF] simulation for {SFG(self.model_id)}"
+              f" from {SFG(bgn_date)} to {SFG(stp_date)} are calculated")
+        return 0
