@@ -57,9 +57,11 @@ def parse_project_args():
     parser_sub.add_argument("--mode", type=str, help="overwrite or append", choices=("o", "a"), required=True)
     parser_sub.add_argument("--bgn", type=str, help="begin date, format = [YYYYMMDD]", required=True)
     parser_sub.add_argument("--stp", type=str, help="stop  date, format = [YYYYMMDD]", required=True)
+    parser_sub.add_argument("--process", type=int, default=None, help="number of process")
 
     # simulation
     parser_sub = parsers_sub.add_parser(name="simu-mclrn", help="simulation for machine learning")
+    parser_sub.add_argument("--mode", type=str, help="overwrite or append", choices=("o", "a"), required=True)
     parser_sub.add_argument("--bgn", type=str, help="begin date, format = [YYYYMMDD]", required=True)
     parser_sub.add_argument("--stp", type=str, help="stop  date, format = [YYYYMMDD]", required=True)
 
@@ -306,14 +308,15 @@ if __name__ == "__main__":
         from project_setup import models_dir, predictions_dir, regroups_dir, calendar_path
         from project_config import models_mclrn
         from husfort.qcalendar import CCalendar
+        from mclrn import cal_mclrn_train_and_predict
 
         calendar = CCalendar(calendar_path)
-        for _, m in models_mclrn.items():
-            m.main(
-                run_mode=args.mode, bgn_date=args.bgn, stp_date=args.stp,
-                calendar=calendar, regroups_dir=regroups_dir,
-                models_dir=models_dir, predictions_dir=predictions_dir
-            )
+        cal_mclrn_train_and_predict(
+            models_mclrn=models_mclrn, proc_qty=args.process,
+            run_mode=args.mode, bgn_date=args.bgn, stp_date=args.stp,
+            calendar=calendar, regroups_dir=regroups_dir,
+            models_dir=models_dir, predictions_dir=predictions_dir
+        )
     elif args.switch == "simu-mclrn":
         from project_setup import predictions_dir, diff_returns_dir, simulations_dir_mclrn, calendar_path
         from project_config import cost_rate, models_mclrn
@@ -324,7 +327,7 @@ if __name__ == "__main__":
         for _, m in models_mclrn.items():
             s = CSimuMclrn(model=m)
             s.main(
-                run_mode="o", bgn_date=args.bgn, stp_date=args.stp,
+                run_mode=args.mode, bgn_date=args.bgn, stp_date=args.stp,
                 calendar=calendar, cost_rate=cost_rate,
                 predictions_dir=predictions_dir, diff_returns_dir=diff_returns_dir,
                 simulations_dir=simulations_dir_mclrn

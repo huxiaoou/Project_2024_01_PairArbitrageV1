@@ -1,4 +1,4 @@
-from mclrn import CMLModel, CMLModelLogistic, CMLMlp, CMLLr
+from mclrn import CMLModel, CMLModelLogistic, CMLMlp, CMLLr, CMLSvc, CMLDt, CMLKn
 
 instruments_pairs = [
     ("A.DCE", "M.DCE"),
@@ -120,23 +120,39 @@ factors_qty = len(factors)
 diff_ret_delays = [1, 2]
 cost_rate = 0e-4
 
-models_mclrn: dict[str, CMLModel] = {
-    "M00": CMLModelLogistic(
+__models_mclrn: list[CMLModel] = [
+    CMLLr(
         model_id="M00",
-        pairs=instruments_pairs, delay=2, factors=factors, y_lbl="diff_return",
-        sig_method="binary", trn_win=3,
-    ),
-    "M01": CMLMlp(
-        model_id="M01",
-        pairs=instruments_pairs, delay=2, factors=factors, y_lbl="diff_return",
-        sig_method="binary", trn_win=3
-    ),
-    "M02": CMLLr(
-        model_id="M02",
         pairs=instruments_pairs, delay=2, factors=factors, y_lbl="diff_return",
         sig_method="continuous", trn_win=3
     ),
-}
+    CMLModelLogistic(
+        model_id="M01",
+        pairs=instruments_pairs, delay=2, factors=factors, y_lbl="diff_return",
+        sig_method="binary", trn_win=3,
+    ),
+    CMLMlp(
+        model_id="M02",
+        pairs=instruments_pairs, delay=2, factors=factors, y_lbl="diff_return",
+        sig_method="binary", trn_win=3
+    ),
+    CMLSvc(
+        model_id="M03",
+        pairs=instruments_pairs, delay=2, factors=factors, y_lbl="diff_return",
+        sig_method="binary", trn_win=3
+    ),
+    CMLDt(
+        model_id="M04",
+        pairs=instruments_pairs, delay=2, factors=factors, y_lbl="diff_return",
+        sig_method="binary", trn_win=3
+    ),
+    CMLKn(
+        model_id="M05",
+        pairs=instruments_pairs, delay=2, factors=factors, y_lbl="diff_return",
+        sig_method="binary", trn_win=3
+    ),
+]
+models_mclrn: dict[str, CMLModel] = {m.model_id: m for m in __models_mclrn}
 
 if __name__ == "__main__":
     print(f"quantity of pairs   = {pairs_qty}")

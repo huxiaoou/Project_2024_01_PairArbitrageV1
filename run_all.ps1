@@ -37,5 +37,5 @@ python main.py quick-simu --mode o --bgn $bgn_date_simu --stp $stp_date
 
 # machine learning
 python main.py mclrn      --mode o --bgn $bgn_date_mclrn --stp $stp_date
-python main.py simu-mclrn          --bgn $bgn_date_mclrn --stp $stp_date
+python main.py simu-mclrn --mode o --bgn $bgn_date_mclrn --stp $stp_date
 python main.py eval-mclrn          --bgn $bgn_date_mclrn --stp $stp_date

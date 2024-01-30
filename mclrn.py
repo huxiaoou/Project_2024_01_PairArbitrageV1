@@ -4,9 +4,13 @@ import numpy as np
 import scipy.stats as sps
 import skops.io as sio
 import pandas as pd
+import multiprocessing as mp
 from sklearn.linear_model import LinearRegression
 from sklearn.linear_model import LogisticRegressionCV
 from sklearn.neural_network import MLPClassifier
+from sklearn.svm import SVC
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.neighbors import KNeighborsClassifier
 from husfort.qcalendar import CCalendar
 from husfort.qutility import check_and_mkdir, SFG, SFY
 from husfort.qsqlite import CQuickSqliteLib, CLib1Tab1, CTable
@@ -88,23 +92,47 @@ class CMLModel(object):
     def _get_predict_df(self, bgn_date: str, end_date: str) -> pd.DataFrame:
         return self.core_data.truncate(before=bgn_date, after=end_date)[self.factors]
 
-    def _normalize(self, df: pd.DataFrame) -> pd.DataFrame:
-        m = df.median()
-        df_fill_nan = df.fillna(m)
-        df_none_inf = df.replace([np.inf, -np.inf], np.nan).dropna(axis=0, how="any")
-        qu = np.quantile(df_none_inf, 1 - self.normalize_alpha / 2, axis=0)
-        ql = np.quantile(df_none_inf, self.normalize_alpha / 2, axis=0)
+    @staticmethod
+    def _fillna(df: pd.DataFrame, aver: pd.Series) -> pd.DataFrame:
+        return df.fillna(aver)
+
+    @staticmethod
+    def _get_rng(df_fill_nan: pd.DataFrame, alpha: float) -> np.ndarray:
+        df_none_inf = df_fill_nan.replace(to_replace=[np.inf, -np.inf], value=np.nan).dropna(axis=0, how="any")
+        qu = np.quantile(df_none_inf, 1 - alpha / 2, axis=0)
+        ql = np.quantile(df_none_inf, alpha / 2, axis=0)
         rng = (qu - ql) / 2
-        sd = rng / sps.norm.ppf(1 - self.normalize_alpha / 2)
-        ub = m + rng
-        ud = m - rng
+        return rng
+
+    @staticmethod
+    def _replace_inf(df_fill_nan: pd.DataFrame, ub: np.ndarray, lb: np.ndarray) -> pd.DataFrame:
         df_fill_nan = df_fill_nan[df_fill_nan < ub].fillna(ub)
-        df_fill_nan = df_fill_nan[df_fill_nan > ud].fillna(ud)
-        df_norm = (df_fill_nan - m) / sd
+        df_fill_nan = df_fill_nan[df_fill_nan > lb].fillna(lb)
+        return df_fill_nan
+
+    @staticmethod
+    def _cal_sd(rng: np.ndarray, alpha: float):
+        return rng / sps.norm.ppf(1 - alpha / 2)
+
+    def _normalize(self, df: pd.DataFrame) -> pd.DataFrame:
+        aver = df.median()
+        df_fill_nan = self._fillna(df, aver=aver)
+
+        rng = self._get_rng(df_fill_nan, alpha=self.normalize_alpha)
+        ub, lb = aver + rng, aver - rng
+        df_fill_inf = self._replace_inf(df_fill_nan, ub=ub, lb=lb)
+
+        sd = self._cal_sd(rng, alpha=self.normalize_alpha)
+        df_norm = (df_fill_inf - aver) / sd
         return df_norm
 
     def _transform_y(self, y_srs: pd.Series) -> pd.Series:
-        pass
+        if self.sig_method == "binary":
+            return y_srs.map(lambda z: 1 if z >= 0 else 0)
+        elif self.sig_method == "continuous":
+            return y_srs
+        else:
+            raise ValueError
 
     def _norm_and_trans(self, train_df: pd.DataFrame) -> tuple[np.ndarray, np.ndarray]:
         x = self._normalize(train_df[self.factors])
@@ -216,9 +244,6 @@ class CMLModelLogistic(CMLModel):
         self.penalty = penalty
         super().__init__(**kwargs)
 
-    def _transform_y(self, y_srs: pd.Series) -> pd.Series:
-        return y_srs.map(lambda z: 1 if z >= 0 else 0)
-
     def _fit(self, x: np.ndarray, y: np.ndarray):
         obj_cv = LogisticRegressionCV(
             cv=self.cv, Cs=self.cs, max_iter=self.max_iter,
@@ -229,19 +254,13 @@ class CMLModelLogistic(CMLModel):
 
 
 class CMLMlp(CMLModel):
-    def __init__(self, hidden_layer_size=(20, 20, 20), max_iter: int = 5000,
-                 **kwargs):
+    def __init__(self, hidden_layer_size=(20, 20, 20), max_iter: int = 5000, **kwargs):
         self.hidden_layer_size = hidden_layer_size
         self.max_iter = max_iter
         super().__init__(**kwargs)
 
-    def _transform_y(self, y_srs: pd.Series) -> pd.Series:
-        return y_srs.map(lambda z: 1 if z >= 0 else 0)
-
     def _fit(self, x: np.ndarray, y: np.ndarray):
-        obj_cv = MLPClassifier(
-            hidden_layer_sizes=self.hidden_layer_size,
-            max_iter=self.max_iter)
+        obj_cv = MLPClassifier(hidden_layer_sizes=self.hidden_layer_size, max_iter=self.max_iter, random_state=0)
         self.model_obj = obj_cv.fit(X=x, y=y)
         return 0
 
@@ -251,10 +270,52 @@ class CMLLr(CMLModel):
         self.fit_intercept = fit_intercept
         super().__init__(**kwargs)
 
-    def _transform_y(self, y_srs: pd.Series) -> pd.Series:
-        return y_srs
-
     def _fit(self, x: np.ndarray, y: np.ndarray):
         obj_cv = LinearRegression(fit_intercept=self.fit_intercept)
         self.model_obj = obj_cv.fit(X=x, y=y)
         return 0
+
+
+class CMLSvc(CMLModel):
+    def __init__(self, c: float = 1.0, degree: int = 3, **kwargs):
+        self.c = c
+        self.degree = degree
+        super().__init__(**kwargs)
+
+    def _fit(self, x: np.ndarray, y: np.ndarray):
+        obj_cv = SVC(C=self.c, degree=self.degree)
+        self.model_obj = obj_cv.fit(X=x, y=y)
+        return 0
+
+
+class CMLDt(CMLModel):
+    def __init__(self, max_depth: int = 5, **kwargs):
+        self.max_depth = max_depth
+        super().__init__(**kwargs)
+
+    def _fit(self, x: np.ndarray, y: np.ndarray):
+        obj_cv = DecisionTreeClassifier(random_state=0, max_depth=self.max_depth)
+        self.model_obj = obj_cv.fit(X=x, y=y)
+        return 0
+
+
+class CMLKn(CMLModel):
+    def __init__(self, n_neighbors: int = 20, weights: str = "distance", p: int = 1, **kwargs):
+        self.n_neighbors = n_neighbors
+        self.weights = weights
+        self.p = p
+        super().__init__(**kwargs)
+
+    def _fit(self, x: np.ndarray, y: np.ndarray):
+        obj_cv = KNeighborsClassifier(n_neighbors=self.n_neighbors, weights=self.weights, p=self.p)
+        self.model_obj = obj_cv.fit(X=x, y=y)
+        return 0
+
+
+def cal_mclrn_train_and_predict(models_mclrn: dict[str, CMLModel], proc_qty: int = None, **kwargs):
+    pool = mp.Pool(processes=proc_qty) if proc_qty else mp.Pool()
+    for mId, m in models_mclrn.items():
+        pool.apply_async(m.main, kwds=kwargs)
+    pool.close()
+    pool.join()
+    return 0

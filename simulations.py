@@ -108,7 +108,9 @@ class CSimuMclrn(object):
         self.pairs = model.pairs
         self.pair_ids = ["_".join(p) for p in self.pairs]
         self.factors = model.factors
+        self.delay = model.delay
         self.sig_method = model.sig_method
+
         self.signals = pd.DataFrame()
         self.signals_aligned = pd.DataFrame()
         self.weight_diff = pd.DataFrame()
@@ -116,10 +118,9 @@ class CSimuMclrn(object):
         self.simu_pair_rets = pd.DataFrame()
         self.simu_rets = pd.DataFrame()
 
-    @staticmethod
-    def _get_dates(bgn_date: str, stp_date: str, calendar: CCalendar) -> tuple[list[str], list[str]]:
+    def _get_dates(self, bgn_date: str, stp_date: str, calendar: CCalendar) -> tuple[list[str], list[str]]:
         ret_dates = calendar.get_iter_list(bgn_date, stp_date)
-        sig_dates = calendar.shift_iter_dates(ret_dates, -2)
+        sig_dates = calendar.shift_iter_dates(ret_dates, -self.delay)
         return sig_dates, ret_dates
 
     def _load_signal(self, sig_bgn_date: str, sig_end_date: str, predictions_dir: str):
