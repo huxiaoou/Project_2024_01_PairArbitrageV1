@@ -1,5 +1,5 @@
 from project_config import instruments_pairs, factors
-from mclrn import CMLModel, CMLModelLogistic, CMLMlp, CMLLr, CMLSvc, CMLDt, CMLKn
+from mclrn import CMLModel, CMLLogistic, CMLMlp, CMLLr, CMLSvc, CMLDt, CMLKn, CMLAdaboost, CMLGb
 
 models_mclrn: list[CMLModel] = [
     CMLLr(
@@ -7,7 +7,7 @@ models_mclrn: list[CMLModel] = [
         pairs=instruments_pairs, delay=2, factors=factors, y_lbl="diff_return",
         sig_method="continuous", trn_win=3
     ),
-    CMLModelLogistic(
+    CMLLogistic(
         model_id="M01", desc="Logistic",
         pairs=instruments_pairs, delay=2, factors=factors, y_lbl="diff_return",
         sig_method="binary", trn_win=3,
@@ -29,6 +29,16 @@ models_mclrn: list[CMLModel] = [
     ),
     CMLKn(
         model_id="M05", desc="KNeighbor",
+        pairs=instruments_pairs, delay=2, factors=factors, y_lbl="diff_return",
+        sig_method="binary", trn_win=3
+    ),
+    CMLAdaboost(
+        model_id="M06", desc="AdaBoost",
+        pairs=instruments_pairs, delay=2, factors=factors, y_lbl="diff_return",
+        sig_method="binary", trn_win=3
+    ),
+    CMLGb(
+        model_id="M07", desc="GradientBoosting",
         pairs=instruments_pairs, delay=2, factors=factors, y_lbl="diff_return",
         sig_method="binary", trn_win=3
     ),

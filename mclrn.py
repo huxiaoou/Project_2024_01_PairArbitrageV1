@@ -11,6 +11,8 @@ from sklearn.neural_network import MLPClassifier
 from sklearn.svm import SVC
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.neighbors import KNeighborsClassifier
+from sklearn.ensemble import AdaBoostClassifier
+from sklearn.ensemble import GradientBoostingClassifier
 from husfort.qcalendar import CCalendar
 from husfort.qutility import check_and_mkdir, SFG, SFY
 from husfort.qsqlite import CQuickSqliteLib, CLib1Tab1, CTable
@@ -192,7 +194,7 @@ class CMLModel(object):
                 x, y = self._norm_and_trans(train_df)
                 self._fit(x, y)
                 self._save_model(month_id=this_date[0:6], models_dir=models_dir)
-                print(f"{dt.datetime.now()} [INF] {SFG(self.model_id)} for {SFG(this_date[0:6])} trained")
+                print(f"{dt.datetime.now()} [INF] {SFG(self.model_id)} for {SFG(this_date[0:6])} trained", end="\r")
         return 0
 
     def predict(self, bgn_date, stp_date, calendar: CCalendar, models_dir: str) -> pd.DataFrame:
@@ -212,8 +214,9 @@ class CMLModel(object):
                     dfs.append(pred_df)
                     print(f"{dt.datetime.now()} [INF] model-month-id = {SFG(prev_month)}"
                           f" predict month = {SFG(this_month)}: {SFG(pred_bgn_date)} -> {SFG(pred_end_date)}"
-                          )
-                    print(f"{dt.datetime.now()} [INF] {SFG(self.model_id)} for {SFG(this_date[0:6])} predicted")
+                          , end="\r")
+                    print(f"{dt.datetime.now()} [INF] {SFG(self.model_id)} for {SFG(this_date[0:6])} predicted",
+                          end="\r")
                 month_dates.clear()  # prepare for next month
         predictions = pd.concat(dfs, axis=0, ignore_index=False).reset_index()
         return predictions
@@ -234,7 +237,7 @@ class CMLModel(object):
         return 0
 
 
-class CMLModelLogistic(CMLModel):
+class CMLLogistic(CMLModel):
     def __init__(self, cs: int = 10, cv: int = None, max_iter: int = 5000,
                  fit_intercept: bool = True, penalty: str = 'l2', **kwargs):
         self.cs = cs
@@ -308,6 +311,34 @@ class CMLKn(CMLModel):
 
     def _fit(self, x: np.ndarray, y: np.ndarray):
         obj_cv = KNeighborsClassifier(n_neighbors=self.n_neighbors, weights=self.weights, p=self.p)
+        self.model_obj = obj_cv.fit(X=x, y=y)
+        return 0
+
+
+class CMLAdaboost(CMLModel):
+    def __init__(self, n_estimators: int = 100, learning_rate: float = 0.5, **kwargs):
+        self.n_estimators = n_estimators
+        self.learning_rate = learning_rate
+        super().__init__(**kwargs)
+
+    def _fit(self, x: np.ndarray, y: np.ndarray):
+        obj_cv = AdaBoostClassifier(
+            n_estimators=self.n_estimators, learning_rate=self.learning_rate,
+            random_state=0)
+        self.model_obj = obj_cv.fit(X=x, y=y)
+        return 0
+
+
+class CMLGb(CMLModel):
+    def __init__(self, n_estimators: int = 10, learning_rate: float = 0.5, **kwargs):
+        self.n_estimators = n_estimators
+        self.learning_rate = learning_rate
+        super().__init__(**kwargs)
+
+    def _fit(self, x: np.ndarray, y: np.ndarray):
+        obj_cv = GradientBoostingClassifier(
+            n_estimators=self.n_estimators, learning_rate=self.learning_rate,
+            random_state=0)
         self.model_obj = obj_cv.fit(X=x, y=y)
         return 0
 

@@ -99,6 +99,7 @@ def plot_simu_mclrn(headers_mclrn: list[tuple[str, str]],
         line_width=1, fig_save_dir=plot_save_dir, fig_save_type="PNG",
         line_style=["-"] * 10 + ["-."] * 10,
         fig_name=f"simu_mclrn", plot_df=nav_df,
+        colormap="jet",
     )
     artist.plot()
     return 0
