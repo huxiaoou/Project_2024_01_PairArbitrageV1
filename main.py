@@ -319,12 +319,13 @@ if __name__ == "__main__":
         )
     elif args.switch == "simu-mclrn":
         from project_setup import predictions_dir, diff_returns_dir, simulations_dir_mclrn, calendar_path
-        from project_config import cost_rate, models_mclrn
+        from project_config import cost_rate
+        from project_config_mclrn import models_mclrn
         from husfort.qcalendar import CCalendar
         from simulations import CSimuMclrn
 
         calendar = CCalendar(calendar_path)
-        for _, m in models_mclrn.items():
+        for m in models_mclrn:
             s = CSimuMclrn(model=m)
             s.main(
                 run_mode=args.mode, bgn_date=args.bgn, stp_date=args.stp,
@@ -334,17 +335,17 @@ if __name__ == "__main__":
             )
     elif args.switch == "eval-mclrn":
         from project_setup import simulations_dir_mclrn, evaluations_dir_mclrn
-        from project_config import models_mclrn
+        from project_config_mclrn import models_mclrn, headers_mclrn
         from evaluations import cal_evaluations_mclrn, plot_simu_mclrn
 
         cal_evaluations_mclrn(
-            ml_model_ids=list(models_mclrn),
+            headers_mclrn=headers_mclrn,
             bgn_date=args.bgn, stp_date=args.stp,
             evaluations_dir=evaluations_dir_mclrn,
             simulations_dir=simulations_dir_mclrn
         )
         plot_simu_mclrn(
-            ml_model_ids=list(models_mclrn),
+            headers_mclrn=headers_mclrn,
             bgn_date=args.bgn, stp_date=args.stp,
             plot_save_dir=evaluations_dir_mclrn,
             simulations_dir=simulations_dir_mclrn

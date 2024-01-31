@@ -71,11 +71,11 @@ def plot_factors_simu_quick(factors: list[str], diff_ret_delays: list[int], inst
     return 0
 
 
-def cal_evaluations_mclrn(ml_model_ids: list[str], evaluations_dir: str, **kwargs):
+def cal_evaluations_mclrn(headers_mclrn: list[tuple[str, str]], evaluations_dir: str, **kwargs):
     eval_results = []
-    for ml_model_id in ml_model_ids:
+    for ml_model_id, desc in headers_mclrn:
         d = cal_evaluations(simu_id=ml_model_id, **kwargs)
-        d.update({"model_id": ml_model_id})
+        d.update({"model_id": ml_model_id, "desc": desc})
         eval_results.append(d)
     eval_results_df = pd.DataFrame(eval_results)
     eval_results_file = "eval.mclrn.csv"
@@ -84,15 +84,16 @@ def cal_evaluations_mclrn(ml_model_ids: list[str], evaluations_dir: str, **kwarg
     return 0
 
 
-def plot_simu_mclrn(ml_model_ids: list[str], bgn_date: str, stp_date: str, simulations_dir: str, plot_save_dir: str):
+def plot_simu_mclrn(headers_mclrn: list[tuple[str, str]],
+                    bgn_date: str, stp_date: str, simulations_dir: str, plot_save_dir: str):
     nav_data = {}
-    for ml_model_id in ml_model_ids:
+    for ml_model_id, desc in headers_mclrn:
         lib_simu_reader = CLibSimu(simu_id=ml_model_id, lib_save_dir=simulations_dir).get_lib_reader()
         net_ret_df = lib_simu_reader.read_by_conditions(conditions=[
             ("trade_date", ">=", bgn_date),
             ("trade_date", "<", stp_date),
         ], value_columns=["trade_date", "netRet"]).set_index("trade_date")
-        nav_data[ml_model_id] = (net_ret_df["netRet"] + 1).cumprod()
+        nav_data[f"{ml_model_id}-{desc}"] = (net_ret_df["netRet"] + 1).cumprod()
     nav_df = pd.DataFrame(nav_data)
     artist = CPlotLines(
         line_width=1, fig_save_dir=plot_save_dir, fig_save_type="PNG",

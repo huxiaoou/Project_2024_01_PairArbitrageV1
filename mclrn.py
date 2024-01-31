@@ -37,11 +37,11 @@ class CLibPredictions(CQuickSqliteLib):
 
 
 class CMLModel(object):
-    def __init__(self, model_id: str,
+    def __init__(self, model_id: str, desc: str,
                  pairs: list[tuple[str, str]], delay: int, factors: list[str], y_lbl: str,
                  sig_method: str,
                  trn_win: int, days_per_month: int = 20, normalize_alpha: float = 0.05):
-        self.model_id = model_id
+        self.model_id, self.desc = model_id, desc
         self.pairs = pairs
         self.delay = delay
         self.factors, self.y_lbl = factors, y_lbl
@@ -312,9 +312,9 @@ class CMLKn(CMLModel):
         return 0
 
 
-def cal_mclrn_train_and_predict(models_mclrn: dict[str, CMLModel], proc_qty: int = None, **kwargs):
+def cal_mclrn_train_and_predict(models_mclrn: list[CMLModel], proc_qty: int = None, **kwargs):
     pool = mp.Pool(processes=proc_qty) if proc_qty else mp.Pool()
-    for mId, m in models_mclrn.items():
+    for m in models_mclrn:
         pool.apply_async(m.main, kwds=kwargs)
     pool.close()
     pool.join()
