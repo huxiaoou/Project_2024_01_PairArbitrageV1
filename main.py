@@ -306,7 +306,7 @@ if __name__ == "__main__":
         )
     elif args.switch == "mclrn":
         from project_setup import models_dir, predictions_dir, regroups_dir, calendar_path
-        from project_config import models_mclrn
+        from project_config_mclrn import models_mclrn
         from husfort.qcalendar import CCalendar
         from mclrn import cal_mclrn_train_and_predict
 
